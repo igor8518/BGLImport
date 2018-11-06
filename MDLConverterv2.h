@@ -16,6 +16,7 @@
 
 #include "3dsmaxsdk_preinclude.h"
 #include <MeshNormalSpec.h>
+#include <notetrck.h>
 #include <meshadj.h>
 #include "resource.h"
 #include <istdplug.h>

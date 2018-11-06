@@ -33,6 +33,14 @@
     <TargetName>MDLConverterv2</TargetName>
     <TargetExt>.dli</TargetExt>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\Users\igor8\source\repos\MDLConverterv2\pugixml-1.9\src;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\igor8\source\repos\MDLConverterv2\pugixml-1.9\scripts\vs2015\x64_Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\Users\igor8\source\repos\MDLConverterv2\pugixml-1.9\src;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\igor8\source\repos\MDLConverterv2\pugixml-1.9\scripts\vs2015\x64_Release;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -42,7 +50,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(MaxSdkLib);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>core.lib;geom.lib;gfx.lib;mesh.lib;maxutil.lib;maxscrpt.lib;paramblk2.lib;pugixml.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>MDLConverterv2.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>

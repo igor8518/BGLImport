@@ -5,6 +5,24 @@
 
 RIFF::RIFF(const TCHAR * filename, ImpInterface * i, Interface * gi)
 {
+	int count = 0;
+	pugi::xml_document doc;
+	pugi::xml_parse_result result = doc.load_file("C:\\GAMES\\LM\\SDK\\4.3.29.25520\\Modeling\\3ds Max\\bin\\modeldef.xml");
+	pugi::xml_node ModelInfo = doc.child("ModelInfo");
+	SAnimation AnimTemp;
+	for (pugi::xml_node Animation = ModelInfo.child("Animation"); Animation; Animation = Animation.next_sibling("Animation"))
+	{
+		AnimTemp.name = Animation.attribute("name").value();
+		AnimTemp.guid = Animation.attribute("guid").value();
+
+		AnimTemp.length = std::strcmp(Animation.attribute("length").value(),"") ? std::stof(Animation.attribute("length").value()) : 0.0;
+
+		AnimTemp.type = std::strcmp(Animation.attribute("type").value(), "Standard") ? Sim : Standard;
+		AnimTemp.typeParam = Animation.attribute("typeParam").value();
+		AnimTemp.typeParam2 = Animation.attribute("typeParam2").value();
+		AnimationXML->push_back(AnimTemp);
+	}
+
 	this->i = i;
 	this->gi = gi;
 	RIFFStream = new ReadStream(filename);

@@ -11,12 +11,27 @@
 #include "WriteStream.h"
 #include <impapi.h>
 #include <maxapi.h>
+#include "pugixml.hpp"
 #pragma pack(push, 1)
 struct RIFFSectionHeader
 {
 	char Name[4];
 	UINT Size;
 	
+};
+enum AnimType
+{
+	Standard,
+	Sim
+};
+struct SAnimation
+{
+	std::string name;
+	std::string guid;
+	AnimType type;
+	std::string typeParam;
+	float length;
+	std::string typeParam2;
 };
 
 struct SRIFFData
@@ -258,6 +273,11 @@ struct SXANS
 	float animation_length;
 	std::vector<SXANK>* XANK;
 };
+struct SXAPS
+{
+	std::string variable;
+	std::string units;
+};
 
 struct SXANI
 {
@@ -385,6 +405,7 @@ public:
 	std::vector<SAMAP>* AMAP = new std::vector<SAMAP>();
 	std::vector<SXANI>* XANI = new std::vector<SXANI>();
 	std::vector<SVERB>* VERB = new std::vector<SVERB>();
+	std::vector<SAnimation>* AnimationXML = new std::vector<SAnimation>();
 	//std::vector<SXANS>* XANS = new std::vector<SXANS>();
 	//std::vector<SXANK>* XANK = new std::vector<SXANK>();
 	

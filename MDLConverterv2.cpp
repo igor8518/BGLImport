@@ -25,13 +25,13 @@ public:
 	virtual ~MDLConverterv2();
 
 	virtual int				ExtCount();					// Number of extensions supported
-	virtual const TCHAR *	Ext(int n);					// Extension #n (i.e. "3DS")
+	virtual const TCHAR *	Ext(int n);					// Extension 0n (i.e. "3DS")
 	virtual const TCHAR *	LongDesc();					// Long ASCII description (i.e. "Autodesk 3D Studio File")
 	virtual const TCHAR *	ShortDesc();				// Short ASCII description (i.e. "3D Studio")
 	virtual const TCHAR *	AuthorName();				// ASCII Author name
 	virtual const TCHAR *	CopyrightMessage();			// ASCII Copyright message
-	virtual const TCHAR *	OtherMessage1();			// Other message #1
-	virtual const TCHAR *	OtherMessage2();			// Other message #2
+	virtual const TCHAR *	OtherMessage1();			// Other message 01
+	virtual const TCHAR *	OtherMessage2();			// Other message 02
 	virtual unsigned int	Version();					// Version number * 100 (i.e. v3.01 = 301)
 	virtual void			ShowAbout(HWND hWnd);		// Show DLL's "About..." box
 	virtual int				DoImport(const TCHAR *name,ImpInterface *i,Interface *gi, BOOL suppressPrompts=FALSE);	// Import file
@@ -130,13 +130,13 @@ const TCHAR *MDLConverterv2::CopyrightMessage()
 
 const TCHAR *MDLConverterv2::OtherMessage1() 
 {		
-	//TODO: Return Other message #1 if any
+	//TODO: Return Other message 01 if any
 	return _T("");
 }
 
 const TCHAR *MDLConverterv2::OtherMessage2() 
 {		
-	//TODO: Return other message #2 in any
+	//TODO: Return other message 02 in any
 	return _T("");
 }
 
@@ -225,14 +225,20 @@ void SetControllerKeys(Control *cont, SXANK *keys, int type, int ctt, int ct)
 		case KEY_POS:
 			pkey.val[0] = ptr->x;
 			pkey.val[1] = ptr->y;
-			pkey.val[2] = ptr->z;
+			pkey.val[2] = -ptr->z;
 			break;
 
 		case KEY_ROT:
 			rkey.val[3] = -ptr->q3;
 			rkey.val[2] = ptr->q2;
-			rkey.val[1] = ptr->q1;
-			rkey.val[0] = ptr->q0;
+			rkey.val[1] = -ptr->q1;
+			rkey.val[0] = -ptr->q0;
+
+			
+			
+
+
+
 			break;
 
 		}
@@ -439,24 +445,50 @@ Matrix3 AddTM(STRAN tran, Matrix3 tm)
 {
 	Matrix3 tm1
 	({
-	Point3(tran.m00, tran.m01, tran.m02),
-	Point3(tran.m10, tran.m11, tran.m12),
-	Point3(tran.m20, tran.m21, tran.m22),
-	Point3(tran.m30, tran.m31, tran.m32)
+	Point3(tran.m00, tran.m01, -tran.m02),
+	Point3(tran.m10, tran.m11, -tran.m12),
+	Point3(-tran.m20, -tran.m21, tran.m22),
+	Point3(tran.m30, tran.m31, -tran.m32)
 	});
 	return tm * tm1;
 
 }
-BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int ParentNodeIndex, INode * ParentNode)
+
+std::string BytesToGUID(byte b[16])
+{
+	char ss[37];
+	sprintf(ss, "% 2.2X% 2.2X% 2.2X% 2.2X-% 2.2X% 2.2X-% 2.2x% 2.2x-% 2.2X% 2.2X-% 2.2X% 2.2X% 2.2X% 2.2X% 2.2X% 2.2X",
+		b[3],
+		b[2],
+		b[1],
+		b[0],
+		b[5],
+		b[4],
+		b[7],
+		b[6],
+		b[8],
+		b[9],
+		b[10],
+		b[11],
+		b[12],
+		b[13],
+		b[14],
+		b[15]);
+	ss[36] = '\0';
+	return std::string(ss, 37);
+}
+
+BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int ParentNodeIndex, INode * ParentNode, std::wstring nameAnim = L"")
 {
 	int countParts = 0;
 	INode* OneNode = NULL;
 	Matrix3 tmO = Matrix3(
 		Point3(1, 0, 0),
-		Point3(0, 0, 1),
 		Point3(0, 1, 0),
+		Point3(0, 0, 1),
 		Point3(0, 0, 0)
 	);
+	tmO.RotateX(deg2rad(90.0));
 	Matrix3 tmR = Matrix3(
 		Point3(1, 0, 0),
 		Point3(0, 1, 0),
@@ -489,7 +521,9 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 					std::vector<SIND3>* inde = riff->IND3;
 
 					std::vector<Point3>* tempVert = new std::vector<Point3>();
+					std::vector<Point3>* tempVertN = new std::vector<Point3>();
 					Point3 tp;
+					Point3 tpn;
 					std::vector<int>* tempInd = new std::vector<int>(part->vertex_count);
 					int fi = 0;
 					for (int ii = 0; ii < part->vertex_count; ii++)
@@ -498,7 +532,12 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 						tp = {
 							vert->at(ii + part->vertex_offset).position_x,
 							vert->at(ii + part->vertex_offset).position_y,
-							vert->at(ii + part->vertex_offset).position_z
+							-vert->at(ii + part->vertex_offset).position_z
+						};
+						tpn = {
+							vert->at(ii + part->vertex_offset).normal_x,
+							vert->at(ii + part->vertex_offset).normal_y,
+							-vert->at(ii + part->vertex_offset).normal_z
 						};
 						int iii = 0;
 						for (iii = 0; iii < tempVert->size(); iii++)
@@ -512,7 +551,9 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 						if (!find)
 						{
 							tempVert->push_back(tp);
+							tempVertN->push_back(tpn);
 							tempInd->at(ii) = fi;
+
 							fi++;
 						}
 						else
@@ -561,7 +602,7 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 						tp = {
 							vert->at(ii + part->vertex_offset).normal_x,
 							vert->at(ii + part->vertex_offset).normal_y,
-							vert->at(ii + part->vertex_offset).normal_z
+							-vert->at(ii + part->vertex_offset).normal_z
 						};
 						int iii = 0;
 						for (iii = 0; iii < tempNVert->size(); iii++)
@@ -613,27 +654,39 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 					{
 
 						mesh->faces[ii].setVerts(
-							tempInd->at((inde->at(ii + part->index_offset / 3).ind1)),
+							tempInd->at((inde->at(ii + part->index_offset / 3).ind3)),
 							tempInd->at((inde->at(ii + part->index_offset / 3).ind2)),
-							tempInd->at((inde->at(ii + part->index_offset / 3).ind3)));
+							tempInd->at((inde->at(ii + part->index_offset / 3).ind1)));
 						mesh->faces[ii].setEdgeVisFlags(1, 1, 1);
 
 						mesh->tvFace[ii].setTVerts(
-							tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)),
+							tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)),
 							tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)),
-							tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)));
-						mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind1))));
-						mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind2))));
-						mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind3))));
+							tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+
+						/*RVertex* rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+						rv->rn.
+						rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind1))));
+						rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)));
+						rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind2))));
+						rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)));
+						rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind3))));*/
+
+						//mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind1))));
+						//mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind2))));
+						//mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind3))));
 						
 						MeshNormalFace &nf = ns->Face(ii);
 						nf.SpecifyAll();
-						nf.SetNormalID(0, tempNInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+						nf.SetNormalID(0, tempNInd->at((inde->at(ii + part->index_offset / 3).ind3)));
 						nf.SetNormalID(1, tempNInd->at((inde->at(ii + part->index_offset / 3).ind2)));
-						nf.SetNormalID(2, tempNInd->at((inde->at(ii + part->index_offset / 3).ind3)));
+						nf.SetNormalID(2, tempNInd->at((inde->at(ii + part->index_offset / 3).ind1)));
 						
 					}					
-					
+					for (int ii = 0; ii < tempVert->size(); ii++)
+					{
+						mesh->setNormal(ii, tempVertN->at(ii));
+					}
 					INode *node = riff->gi->CreateObjectNode(object);
 					node->SetMtl(Mtls->at(part->material_index));
 					if (!node) {
@@ -669,11 +722,13 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 					};
 					tm = tm * tmO;
 					node->SetNodeTM(0, tm);
-					
-					node->ResetTransform(0, FALSE);
+					node->SetWireColor(RGB(255, 255, 255));
+					//tm.NoTrans();
+					//ns->Transform(tmO);
+					//node->ResetTransform(0, FALSE);
 					
 
-					int xanimInd = riff->SGAL->at(riff->SCEN->at(ParentNodeIndex).amap_offset / 8).xanim;
+					//int xanimInd = riff->SGAL->at(riff->SCEN->at(ParentNodeIndex).amap_offset / 8).xanim;
 					/*if (xanimInd >= 0)
 					{
 						for (int i = 0; i < riff->XANI->size(); i++)
@@ -729,8 +784,14 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 					mesh->InvalidateGeomCache();
 					mesh->InvalidateTopologyCache();
 					
-
-					node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + +L"_P").c_str());
+					if (nameAnim == L"")
+					{
+						node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + +L"_P").c_str());
+					}
+					else
+					{
+						node->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + +L"_P").c_str());
+					}
 					countParts++;
 				}
 			}
@@ -869,7 +930,7 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 				ParentNode->AttachChild(node);
 			}
 			
-
+			
 			int xanimInd = riff->SGAL->at(riff->SCEN->at(CurrNode).amap_offset / 8).xanim;
 			if (xanimInd >= 0)
 			{
@@ -880,11 +941,44 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 						SXANS xans = riff->XANI->at(i).XANS->at(j);
 						if (xanimInd == riff->XANI->at(i).XANS->at(j).animation_ID)
 						{
-
+							nameAnim = L"NA";
 							if (node->GetTMController())
 							{
 								SuspendAnimate();
 								AnimateOn();
+								std::string ss = BytesToGUID(riff->XANI->at(i).guid);
+								
+								for (int jj = 0; jj < riff->AnimationXML->size(); jj++)
+								{
+									if (std::strcmp(ss.c_str(), riff->AnimationXML->at(jj).guid.c_str()) == 0)
+									{
+										nameAnim = std::wstring(riff->AnimationXML->at(jj).name.begin(), riff->AnimationXML->at(jj).name.end());
+										break;
+									}
+								}
+								/////////////////////////////////////
+								Control *TControl = node->GetTMController();
+								DefNoteTrack* nt = new DefNoteTrack();
+								TControl->AddNoteTrack(nt);
+								nt->AddNewKey(0, 0);
+								nt->AddNewKey(0, 0);
+								NoteKeyTab keys;
+								keys.Init();
+								std::wstring anStart = L"ANIM_START = \"" + nameAnim + L"\"";
+								std::wstring anEnd = L"ANIM_END = \"" + nameAnim + L"\"";
+								NoteKey* nk = new NoteKey(0, anStart.c_str());
+								nk->time = 0;																
+								keys.Append(1, &nk);
+
+								nk = new NoteKey(0, anEnd.c_str());
+								
+								nk->time = riff->XANI->at(i).animation_length * GetTicksPerFrame();
+								keys.Append(1, &nk);
+								
+								nt->keys = keys;
+								////////////////////////////////////////
+												
+
 								for (int k = 0; k < xans.XANK->size(); k++)
 								{
 									if (xans.XANK->at(k).type == 4)
@@ -921,21 +1015,29 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 				}
 
 			}
+			
 			node->SetNodeTM(0, tm);
-			node->ResetTransform(0, FALSE);
+			//node->ResetTransform(0, FALSE);
 			OneNode = node;
-			node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_D").c_str());
+			if (nameAnim == L"")
+			{
+				node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_D").c_str());
+			}
+			else
+			{
+				node->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_D").c_str());
+			}
 			if (NodeIndex == 0)
 			{
 				rootNode = node;
 			}
 			
 		}
-		CreateNode(riff, scenes, scenes->at(CurrNode).child_node_index, CurrNode, OneNode);
+		CreateNode(riff, scenes, scenes->at(CurrNode).child_node_index, CurrNode, OneNode, nameAnim);
 		CurrNode = scenes->at(CurrNode).peer_node_index;
 	}
 	//rootNode->SetNodeTM(0, tmR);
-	rootNode->ResetPivot(0);
+	//rootNode->ResetPivot(0);
 	//rootNode->ResetTransform(0, TRUE);
 	return true;
 	
