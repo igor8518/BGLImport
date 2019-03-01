@@ -12,6 +12,7 @@
 #include <impapi.h>
 #include <maxapi.h>
 #include "pugixml.hpp"
+#include <algorithm>
 #pragma pack(push, 1)
 struct RIFFSectionHeader
 {
@@ -19,6 +20,35 @@ struct RIFFSectionHeader
 	UINT Size;
 	
 };
+struct SSim
+{
+	std::string Variable = "";
+	std::string Units = "";
+	bool ScaleF = false;
+	bool BiasF = false;
+	float Scale = 1.0;
+	float Bias = 0.0;
+};
+struct SParameter
+{
+	bool CodeF = false;
+	bool SimF = false;
+	bool LagF = false;
+	std::string Code = "";
+	SSim Sim;
+	float Lag = 0.0;
+};
+struct SAnimationPart
+{
+	SParameter Parameter;
+};
+struct SVisible
+{
+	SParameter Parameter;
+};
+
+
+
 enum AnimType
 {
 	Standard,
@@ -33,6 +63,32 @@ struct SAnimation
 	float length;
 	std::string typeParam2;
 };
+struct SVisibleInRange
+{
+	bool MinValueB;
+	bool MaxValueB;
+	SParameter Parameter;
+	int MinValue;
+	int MaxValue;
+};
+struct SPartInfo
+{
+	std::string Name = "";
+	std::string Copy = "";
+	int AnimLength = 100;
+	bool AnimationF = false;
+	bool VisibleF = false;
+	bool VisibleInRangeF = false;
+	
+	SAnimationPart Animation;
+	SVisible Visible;
+	SVisibleInRange VisibleInRange;
+
+};
+
+
+
+
 
 struct SRIFFData
 {
@@ -169,6 +225,29 @@ struct SPART
 	int  mouse_rectangle_ref;     //(? )
 };
 
+struct SREFP
+{
+	int scenegraph_reference;
+	std::string name;
+};
+
+struct SATTO
+{
+	int  Magic1;
+	short type;
+	short length;
+	short offAttachPoint;
+	short unk1;
+	int unk2;
+	int unk3;
+	int unk4;
+	int unk5;
+	std::string fxName;
+	std::string params;
+	std::string attachPoint;
+	int Magic2;
+};
+
 struct SBMAP
 {
 	long index;
@@ -179,14 +258,21 @@ struct SSKIN
 	byte bn[4];
 	byte weight[4];
 };
-#pragma pack(pop)
+//#pragma pack(pop)
 struct SVERB
 {
 	std::vector<SVERT>* VERT;
 	std::vector<SBMAP>* BMAP;
 	std::vector<SSKIN>* SKIN;
 };
-#pragma pack(push, 1)
+
+struct CSVERB
+{
+	std::vector<SVERT>* VERT;
+	std::vector<SBMAP>* BMAP;
+	std::vector<SSKIN>* SKIN;
+};
+//#pragma pack(push, 1)
 
 struct SLODT
 {
@@ -235,6 +321,16 @@ struct SSGBR
 	short bone_index;
 };
 
+struct SSGBN
+{
+	std::string bone_name;
+};
+
+struct SSGVL
+{
+	short vis_index;
+};
+
 struct SXANKH
 {
 	byte type;
@@ -275,8 +371,29 @@ struct SXANS
 };
 struct SXAPS
 {
+	std::string code;
 	std::string variable;
 	std::string units;
+	std::string bias;
+	std::string lag;
+};
+/*struct SVISC
+{
+	bool Default;
+	std::string code;
+
+	std::string name;
+};*/
+struct SVISI
+{
+	bool Default;
+	std::string name;
+	bool CodeF = false;
+	bool SimF = false;
+	bool LagF = false;
+	std::string Code = "";
+	SSim Sim;
+	int Lag;
 };
 
 struct SXANI
@@ -286,6 +403,7 @@ struct SXANI
 	char type[16]; //"Sim"
 	std::string *typeParam;// "AutoPlay
 	std::vector<SXANS>* XANS;
+	SXAPS XAPS;
 };
 #pragma pack(pop)
 
@@ -375,6 +493,8 @@ private:
 	
 public:
 	RIFF(const TCHAR* filename, ImpInterface * i, Interface * gi);
+	std::string ShortCode(std::string Code);
+	std::vector<std::string> ConvertVisAnim(std::string std, int maxCount, int NamePar, int type);
 	HRESULT ReadSectionsHierarhy();
 	UINT UINT2(char Name[4]);
 	void WriteData(int Data, UINT parent);
@@ -391,29 +511,66 @@ public:
 	SMDLG MDLG;
 	SBBOX BBOX;
 	float RADI;
-	std::vector<std::string>* TEXT = new std::vector<std::string>();
+//#pragma pack(push, 1)
+	/*std::vector<std::string>* TEXT = new std::vector<std::string>();
 	std::vector<SMAT3>* MAT3 = new std::vector<SMAT3>();
 	std::vector<SEMT1>* EMT1 = new std::vector<SEMT1>();
 	std::vector<SIND3>* IND3 = new std::vector<SIND3>();
 	std::vector<SINDE>* INDE = new std::vector<SINDE>();
-	
+	std::vector<SVERB>* VERB = new std::vector<SVERB>();
 	std::vector<SLODT>* LODT = new std::vector<SLODT>();
 	std::vector<STRAN>* TRAN = new std::vector<STRAN>();
 	std::vector<SSCEN>* SCEN = new std::vector<SSCEN>();
 	std::vector<SSGAL>* SGAL = new std::vector<SSGAL>();
 	std::vector<SSGBR>* SGBR = new std::vector<SSGBR>();
+	std::vector<SSGBN>* SGBN = new std::vector<SSGBN>();
+	std::vector<SSGVL>* SGVL = new std::vector<SSGVL>();
+	std::vector<SVISI>* VISC = new std::vector<SVISI>();
 	std::vector<SAMAP>* AMAP = new std::vector<SAMAP>();
 	std::vector<SXANI>* XANI = new std::vector<SXANI>();
-	std::vector<SVERB>* VERB = new std::vector<SVERB>();
+	std::vector<SREFP>* REFP = new std::vector<SREFP>();
+	std::vector<SATTO>* ATTO = new std::vector<SATTO>();
+
+
 	std::vector<SAnimation>* AnimationXML = new std::vector<SAnimation>();
+	std::vector<SPartInfo>* PartInfoXML = new std::vector<SPartInfo>();
 	//std::vector<SXANS>* XANS = new std::vector<SXANS>();
 	//std::vector<SXANK>* XANK = new std::vector<SXANK>();
-	
-	SXANI* CurrXANI;
-	SXANS* CurrXANS;
+
+	std::vector<UINT>* BadSec = new std::vector<UINT>();*/
+	std::vector<std::string>* TEXT;
+	std::vector<SMAT3>* MAT3;
+	std::vector<SEMT1>* EMT1;
+	std::vector<SIND3>* IND3;
+	std::vector<SINDE>* INDE;
+	std::vector<SVERB>* VERB;
+	std::vector<SLODT>* LODT;
+	std::vector<STRAN>* TRAN;
+	std::vector<SSCEN>* SCEN;
+	std::vector<SSGAL>* SGAL;
+	std::vector<SSGBR>* SGBR;
+	std::vector<SSGBN>* SGBN;
+	std::vector<SSGVL>* SGVL;
+	std::vector<SVISI>* VISI;
+	std::vector<SAMAP>* AMAP;
+	std::vector<SXANI>* XANI;
+	std::vector<SREFP>* REFP;
+	std::vector<SATTO>* ATTO;
+
+
+	std::vector<SAnimation>* AnimationXML;
+	std::vector<SPartInfo>* PartInfoXML;
+	//std::vector<SXANS>* XANS = new std::vector<SXANS>();
+	//std::vector<SXANK>* XANK = new std::vector<SXANK>();
+
+	std::vector<UINT>* BadSec = NULL;
+	SXANI* CurrXANI = NULL;
+	SXANS* CurrXANS = NULL;
+//#pragma pack(pop)
 	SLODT CurrLOD;
 	SVERB CurrVERB;
 	std::string MDLN;
+	int UniVISI = 0;
 };
 
 extern BOOL DrawPart(RIFF* riff, SPART* part);

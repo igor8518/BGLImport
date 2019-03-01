@@ -5,13 +5,32 @@
 
 RIFF::RIFF(const TCHAR * filename, ImpInterface * i, Interface * gi)
 {
+	AnimationXML = new std::vector<SAnimation>();
+	PartInfoXML = new std::vector<SPartInfo>();
+	BadSec = new std::vector<UINT>();
+
+	HKEY rKey;
+	WCHAR Reget[512];
+	DWORD RegetPath = sizeof(Reget);
+	RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Lockheed Martin\\Prepar3D v4 SDK", 0, KEY_QUERY_VALUE, &rKey);
+	RegQueryValueEx(rKey, L"SetupPath", NULL, NULL, LPBYTE(Reget), &RegetPath);
+	RegCloseKey(rKey);
 	int count = 0;
+	if (Reget[lstrlen(Reget)-1] == L'\\')
+	{
+		Reget[lstrlen(Reget) - 1] = L'\0';
+	}
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file("C:\\GAMES\\LM\\SDK\\4.3.29.25520\\Modeling\\3ds Max\\bin\\modeldef.xml");
+	std::wstring s = (std::wstring(Reget) + std::wstring(L"\\Modeling\\3ds Max\\bin\\modeldef.xml"));
+	const wchar_t* sw = s.c_str();
+	pugi::xml_parse_result result = doc.load_file((std::wstring(Reget) + std::wstring(L"\\Modeling\\3ds Max\\bin\\modeldef.xml")).c_str());
+	//pugi::xml_parse_result result = doc.load_file("C:\\Users\\igor8\\Documents\\3dsMax\\scenes\\modeldef.xml");
 	pugi::xml_node ModelInfo = doc.child("ModelInfo");
-	SAnimation AnimTemp;
+	
+	
 	for (pugi::xml_node Animation = ModelInfo.child("Animation"); Animation; Animation = Animation.next_sibling("Animation"))
 	{
+		SAnimation AnimTemp;
 		AnimTemp.name = Animation.attribute("name").value();
 		AnimTemp.guid = Animation.attribute("guid").value();
 
@@ -22,12 +41,441 @@ RIFF::RIFF(const TCHAR * filename, ImpInterface * i, Interface * gi)
 		AnimTemp.typeParam2 = Animation.attribute("typeParam2").value();
 		AnimationXML->push_back(AnimTemp);
 	}
-
+	for (pugi::xml_node PartInfo = ModelInfo.child("PartInfo"); PartInfo; PartInfo = PartInfo.next_sibling("PartInfo"))
+	{
+		SPartInfo PartTemp;
+		PartTemp.Name = PartInfo.child("Name").child_value();
+		if (PartInfo.child("Copy"))
+		{
+			PartTemp.Copy = PartInfo.child("Copy").child_value();
+		}
+		if (PartInfo.child("AnimLength"))
+		{
+			PartTemp.AnimLength = std::atoi(PartInfo.child("AnimLength").child_value());
+		}
+		pugi::xml_node AnimXML = PartInfo.child("Animation");
+		if (AnimXML)
+		{
+			PartTemp.AnimationF = true;
+			if (AnimXML.child("Parameter").child("Code"))
+			{
+				PartTemp.Animation.Parameter.CodeF = true;
+				PartTemp.Animation.Parameter.Code = AnimXML.child("Parameter").child("Code").child_value();
+			}
+			if (AnimXML.child("Parameter").child("Sim"))
+			{
+				PartTemp.Animation.Parameter.SimF = true;
+				if (AnimXML.child("Parameter").child("Sim").child("Variable"))
+				{
+					PartTemp.Animation.Parameter.Sim.Variable = AnimXML.child("Parameter").child("Sim").child("Variable").child_value();
+				}
+				if (AnimXML.child("Parameter").child("Sim").child("Units"))
+				{
+					PartTemp.Animation.Parameter.Sim.Units = AnimXML.child("Parameter").child("Sim").child("Units").child_value();
+				}
+				if (AnimXML.child("Parameter").child("Sim").child("Scale"))
+				{
+					PartTemp.Animation.Parameter.Sim.ScaleF = true;
+					PartTemp.Animation.Parameter.Sim.Scale = std::atof(AnimXML.child("Parameter").child("Sim").child("Scale").child_value());
+				}
+				if (AnimXML.child("Parameter").child("Sim").child("Bias"))
+				{
+					PartTemp.Animation.Parameter.Sim.BiasF = true;
+					PartTemp.Animation.Parameter.Sim.Bias = std::atoi(AnimXML.child("Parameter").child("Sim").child("Bias").child_value());
+				}
+			}
+			if (AnimXML.child("Parameter").child("Lag"))
+			{
+				PartTemp.Animation.Parameter.LagF = true;
+				PartTemp.Animation.Parameter.Lag = atoi(AnimXML.child("Parameter").child("Lag").child_value());
+			}
+		}
+		pugi::xml_node VisXML = PartInfo.child("Visibility");
+		if (VisXML)
+		{
+			PartTemp.VisibleF = true;
+			if (VisXML.child("Parameter").child("Code"))
+			{
+				PartTemp.Visible.Parameter.CodeF = true;
+				PartTemp.Visible.Parameter.Code = VisXML.child("Parameter").child("Code").child_value();
+			}
+			if (VisXML.child("Parameter").child("Sim"))
+			{
+				PartTemp.Visible.Parameter.SimF = true;
+				if (VisXML.child("Parameter").child("Sim").child("Variable"))
+				{
+					PartTemp.Visible.Parameter.Sim.Variable = VisXML.child("Parameter").child("Sim").child("Variable").child_value();
+				}
+				if (VisXML.child("Parameter").child("Sim").child("Units"))
+				{
+					PartTemp.Visible.Parameter.Sim.Units = VisXML.child("Parameter").child("Sim").child("Units").child_value();
+				}
+				if (VisXML.child("Parameter").child("Sim").child("Scale"))
+				{
+					PartTemp.Visible.Parameter.Sim.ScaleF = true;
+					PartTemp.Visible.Parameter.Sim.Scale = std::atof(VisXML.child("Parameter").child("Sim").child("Scale").child_value());
+				}
+				if (VisXML.child("Parameter").child("Sim").child("Bias"))
+				{
+					PartTemp.Visible.Parameter.Sim.BiasF = true;
+					PartTemp.Visible.Parameter.Sim.Bias = std::atoi(VisXML.child("Parameter").child("Sim").child("Bias").child_value());
+				}
+			}
+			if (AnimXML.child("Parameter").child("Lag"))
+			{
+				PartTemp.Visible.Parameter.LagF = true;
+				PartTemp.Visible.Parameter.Lag = atoi(AnimXML.child("Parameter").child("Lag").child_value());
+			}
+		}
+		pugi::xml_node VisRXML = PartInfo.child("VisibleInRange");
+		if (VisRXML)
+		{
+			PartTemp.VisibleInRangeF = true;
+			if (VisRXML.child("Parameter").child("Code"))
+			{
+				PartTemp.VisibleInRange.Parameter.CodeF = true;
+				PartTemp.VisibleInRange.Parameter.Code = VisRXML.child("Parameter").child("Code").child_value();
+			}
+			if (VisRXML.child("Parameter").child("Sim"))
+			{
+				PartTemp.VisibleInRange.Parameter.SimF = true;
+				if (VisRXML.child("Parameter").child("Sim").child("Variable"))
+				{
+					PartTemp.VisibleInRange.Parameter.Sim.Variable = VisRXML.child("Parameter").child("Sim").child("Variable").child_value();
+				}
+				if (VisRXML.child("Parameter").child("Sim").child("Units"))
+				{
+					PartTemp.VisibleInRange.Parameter.Sim.Units = VisRXML.child("Parameter").child("Sim").child("Units").child_value();
+				}
+				if (VisRXML.child("Parameter").child("Sim").child("Scale"))
+				{
+					PartTemp.VisibleInRange.Parameter.Sim.ScaleF = true;
+					PartTemp.VisibleInRange.Parameter.Sim.Scale = std::atof(VisRXML.child("Parameter").child("Sim").child("Scale").child_value());
+				}
+				if (VisRXML.child("Parameter").child("Sim").child("Bias"))
+				{
+					PartTemp.VisibleInRange.Parameter.Sim.BiasF = true;
+					PartTemp.VisibleInRange.Parameter.Sim.Bias = std::atoi(VisRXML.child("Parameter").child("Sim").child("Bias").child_value());
+				}
+			}
+			if (AnimXML.child("Parameter").child("Lag"))
+			{
+				PartTemp.VisibleInRange.Parameter.LagF = true;
+				PartTemp.VisibleInRange.Parameter.Lag = atoi(AnimXML.child("Parameter").child("Lag").child_value());
+			}
+		}
+		PartInfoXML->push_back(PartTemp);
+	}
 	this->i = i;
 	this->gi = gi;
 	RIFFStream = new ReadStream(filename);
 	RIFFText = new WriteStreamText(L"D:\\PMDG.txt");
+	TEXT = new std::vector<std::string>();
+	MAT3 = new std::vector<SMAT3>();
+	EMT1 = new std::vector<SEMT1>();
+	IND3 = new std::vector<SIND3>();
+	INDE = new std::vector<SINDE>();
+	VERB = new std::vector<SVERB>();
+	LODT = new std::vector<SLODT>();
+	TRAN = new std::vector<STRAN>();
+	SCEN = new std::vector<SSCEN>();
+	SGAL = new std::vector<SSGAL>();
+	SGBR = new std::vector<SSGBR>();
+	SGBN = new std::vector<SSGBN>();
+	SGVL = new std::vector<SSGVL>();
+	VISI = new std::vector<SVISI>();
+	AMAP = new std::vector<SAMAP>();
+	XANI = new std::vector<SXANI>();
+	REFP = new std::vector<SREFP>();
+	ATTO = new std::vector<SATTO>();
+
+
+	
+
+
+
 	ReadSectionsHierarhy();
+}
+std::string RIFF::ShortCode(std::string Code)
+{
+	std::string sc = "";
+	for (int i = 0; i < Code.length(); i++)
+	{
+		if ((Code[i] != ' ') &&
+			(Code[i] != '\n') &&
+			(Code[i] != '\t') &&
+			(Code[i] != '\r'))
+		{
+			sc = sc + Code[i];
+		}
+	}
+	return sc;
+}
+
+std::vector<std::string> RIFF::ConvertVisAnim(std::string str, int maxCount, int NamePar, int type)
+{
+	int ev = 0;
+	std::vector<std::string> ReturnArr = std::vector<std::string>();
+	std::string name = "";
+	std::string sc = "";
+	int fv = str.find('#', 0);
+	if (fv == -1)
+	{
+		sc = ShortCode(str);
+		int n1 = str.find(':');
+		int n2 = str.find(',');
+		name = str.substr(n1 + 1, n2 - n1 - 1);
+		std::replace(name.begin(), name.end(), ' ', '_');
+		std::replace(name.begin(), name.end(), ':', '_');
+		ReturnArr.push_back(name);
+		ReturnArr.push_back(str);
+		int i;
+		if (type == 0)
+		{
+			for (i = 0; i < PartInfoXML->size(); i++)
+			{
+
+				if (PartInfoXML->at(i).VisibleF)
+				{
+					if (PartInfoXML->at(i).Visible.Parameter.LagF == false)
+					{
+						if (std::strcmp(ShortCode(PartInfoXML->at(i).Visible.Parameter.Code).c_str(), sc.c_str()) == 0)
+						{
+							ReturnArr[0] = PartInfoXML->at(i).Name;
+							break;
+						}
+					}
+
+				}
+			}
+			if (i == PartInfoXML->size())
+			{
+				ReturnArr[0] = "custom_vis_" + ReturnArr[0];
+				if (UniVISI < 10)
+				{
+					ReturnArr[0] = ReturnArr[0] + "_0" + std::to_string(UniVISI);
+				}
+				else
+				{
+					ReturnArr[0] = ReturnArr[0] + "_" + std::to_string(UniVISI);
+				}
+			}
+		}
+		if (type == 1)
+		{
+			for (i = 0; i < PartInfoXML->size(); i++)
+			{
+				if (PartInfoXML->at(i).AnimationF)
+				{
+					if (PartInfoXML->at(i).Animation.Parameter.LagF == false)
+					{
+						if (std::strcmp(ShortCode(PartInfoXML->at(i).Animation.Parameter.Code).c_str(), sc.c_str()) == 0)
+						{
+							ReturnArr[0] = PartInfoXML->at(i).Name;
+							break;
+						}
+					}
+
+				}
+				
+			}
+			if (i == PartInfoXML->size())
+			{
+				ReturnArr[0] = "custom_anim_" + ReturnArr[0];
+			}
+		}
+	}
+	else
+	{
+		if (fv == 0)
+		{
+			int l1 = 0;
+			int l2 = str.find('#', l1 + 1);
+			std::string lag = str.substr(l1 + 1, l2 - l1 - 1);
+			std::string code = str.substr(l2 + 1);
+			sc = ShortCode(code);
+			int n1 = str.find(':');
+			int n2 = str.find(',');
+			name = str.substr(n1 + 1, n2 - n1 - 1);
+			std::replace(name.begin(), name.end(), ' ', '_');
+			std::replace(name.begin(), name.end(), ':', '_');
+			ReturnArr.push_back(name);
+			ReturnArr.push_back(code);
+			ReturnArr.push_back(lag);
+			int i;
+			if (type == 0)
+			{
+				for (i = 0; i < PartInfoXML->size(); i++)
+				{
+
+					if (PartInfoXML->at(i).VisibleF)
+					{
+						if (PartInfoXML->at(i).Visible.Parameter.LagF == true)
+						{
+							if (std::strcmp(ShortCode(PartInfoXML->at(i).Visible.Parameter.Code).c_str(), sc.c_str()) == 0)
+							{
+								if (PartInfoXML->at(i).Visible.Parameter.Lag == std::atof(lag.c_str()))
+								{
+									ReturnArr[0] = PartInfoXML->at(i).Name;
+									break;
+								}
+							}
+						}
+
+					}
+				}
+				if (i == PartInfoXML->size())
+				{
+					ReturnArr[0] = "custom_vis_" + ReturnArr[0];
+					if (UniVISI < 10)
+					{
+						ReturnArr[0] = ReturnArr[0] + "_0" + std::to_string(UniVISI);
+					}
+					else
+					{
+						ReturnArr[0] = ReturnArr[0] + "_" + std::to_string(UniVISI);
+					}
+				}
+			}
+			if (type == 1)
+			{
+				for (i = 0; i < PartInfoXML->size(); i++)
+				{
+					if (PartInfoXML->at(i).AnimationF)
+					{
+						if (PartInfoXML->at(i).Animation.Parameter.LagF == true)
+						{
+							if (std::strcmp(ShortCode(PartInfoXML->at(i).Animation.Parameter.Code).c_str(), sc.c_str()) == 0)
+							{
+								if (PartInfoXML->at(i).Animation.Parameter.Lag == std::atof(lag.c_str()))
+								{
+									ReturnArr[0] = PartInfoXML->at(i).Name;
+									break;
+								}
+							}
+						}
+
+					}
+
+				}
+				if (i == PartInfoXML->size())
+				{
+					ReturnArr[0] = "custom_anim_" + ReturnArr[0];
+				}
+			}
+		}
+		else
+		{
+			std::string variable = str.substr(0, fv);
+			std::string name = variable;
+			std::replace(name.begin(), name.end(), ' ', '_');
+			std::replace(name.begin(), name.end(), ':', '_');
+			ReturnArr.push_back(name);
+			ReturnArr.push_back(variable);
+			int u1 = fv;
+			int u2 = str.find('#', fv + 1);
+			std::string unit = str.substr(u1+1, u2 - u1 - 1);
+			ReturnArr.push_back(unit);
+			int b1 = u2;
+			int b2 = str.find('#', b1 + 1);
+			std::string bias = "";
+			std::string lag = "";
+			if (b1 >= 0)
+			{
+				bias = str.substr(b1+1, b2 - b1 - 1);
+				ReturnArr.push_back(bias);
+				int l1 = b2;
+				int l2 = str.find('#', l1 + 1);
+				if (l1 >= 0)
+				{
+					lag = str.substr(l1+1, l2 - l1 - 1);
+					ReturnArr.push_back(lag);
+				}
+			}
+			int i;
+			if (type == 0)
+			{
+				for (i = 0; i < PartInfoXML->size(); i++)
+				{
+					if (PartInfoXML->at(i).VisibleF)
+					{
+						if (std::strcmp((PartInfoXML->at(i).Visible.Parameter.Sim.Variable).c_str(), variable.c_str()) == 0)
+						{
+							if (std::strcmp((PartInfoXML->at(i).Visible.Parameter.Sim.Units).c_str(), unit.c_str()) == 0)
+							{
+								if (PartInfoXML->at(i).Visible.Parameter.Sim.BiasF == (ReturnArr.size() >= 4))
+								{
+									if (PartInfoXML->at(i).Visible.Parameter.Sim.Bias == std::atof(bias.c_str()))
+									{
+										if (PartInfoXML->at(i).Visible.Parameter.LagF == (ReturnArr.size() >= 5))
+										{
+											if (PartInfoXML->at(i).Visible.Parameter.Lag == std::atof(lag.c_str()))
+											{
+												ReturnArr[0] = PartInfoXML->at(i).Name;
+												break;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+
+				}
+			
+				if (i == PartInfoXML->size())
+				{
+					ReturnArr[0] = "custom_vis_" + ReturnArr[0];
+					if (UniVISI < 10)
+					{
+						ReturnArr[0] = ReturnArr[0] + "_0" + std::to_string(UniVISI);
+					}
+					else
+					{
+						ReturnArr[0] = ReturnArr[0] + "_" + std::to_string(UniVISI);
+					}
+				}
+			}
+			if (type == 1)
+			{
+				for (i = 0; i < PartInfoXML->size(); i++)
+				{
+					if (PartInfoXML->at(i).AnimationF)
+					{
+						if (std::strcmp((PartInfoXML->at(i).Animation.Parameter.Sim.Variable).c_str(), variable.c_str()) == 0)
+						{
+							if (std::strcmp((PartInfoXML->at(i).Animation.Parameter.Sim.Units).c_str(), unit.c_str()) == 0)
+							{
+								if (PartInfoXML->at(i).Animation.Parameter.Sim.BiasF == (ReturnArr.size() >= 4))
+								{
+									if (PartInfoXML->at(i).Animation.Parameter.Sim.Bias == std::atof(bias.c_str()))
+									{
+										if (PartInfoXML->at(i).Animation.Parameter.LagF == (ReturnArr.size() >= 5))
+										{
+											if (PartInfoXML->at(i).Animation.Parameter.Lag == std::atof(lag.c_str()))
+											{
+												ReturnArr[0] = PartInfoXML->at(i).Name;
+												break;
+											}
+										}
+									}
+								}
+							}
+						}
+
+					}
+
+				}
+				if (i == PartInfoXML->size())
+				{
+					ReturnArr[0] = "custom_anim_" + ReturnArr[0];
+				}
+			}
+			
+		}
+	}
+	return ReturnArr;
 }
 
 HRESULT RIFF::ReadSectionsHierarhy()
@@ -151,41 +599,22 @@ HRESULT RIFF::ReadSection(int parent)
 			int temp = sizeof(lMAT3);
 			Seek = Seek + sizeof(lMAT3);
 			MAT3->push_back(lMAT3);
-			WriteData(
-				"material_flags				= " + std::to_string(lMAT3.material_flags) + ", \n" +
-				"material_flags_2			= " + std::to_string(lMAT3.material_flags_2) + ", \n" +
-				"diffuse_texture_index		= " + std::to_string(lMAT3.diffuse_texture_index) + ", \n" +
-				"detail_texture_index		= " + std::to_string(lMAT3.detail_texture_index) + ", \n" +
-				"bumpmap_texture_index		= " + std::to_string(lMAT3.bumpmap_texture_index) + ", \n" +
-				"specular_texture_index		= " + std::to_string(lMAT3.specular_texture_index) + ", \n" +
-				"emissive_texture_index		= " + std::to_string(lMAT3.emissive_texture_index) + ", \n" +
-				"reflection_texture_index	= " + std::to_string(lMAT3.reflection_texture_index) + ", \n" +
-				"fresnel_texture_index		= " + std::to_string(lMAT3.fresnel_texture_index) + ", \n" +
-				"diffuse_color_R			= " + std::to_string(lMAT3.diffuse_color_R) + ", \n" +
-				"diffuse_color_G			= " + std::to_string(lMAT3.diffuse_color_G) + ", \n" +
-				"diffuse_color_B			= " + std::to_string(lMAT3.diffuse_color_B) + ", \n" +
-				"diffuse_color_A			= " + std::to_string(lMAT3.diffuse_color_A) + ", \n" +
-				"specular_color_R			= " + std::to_string(lMAT3.specular_color_R) + ", \n" +
-				"specular_color_G			= " + std::to_string(lMAT3.specular_color_G) + ", \n" +
-				"specular_color_B			= " + std::to_string(lMAT3.specular_color_B) + ", \n" +
-				"specular_color_A			= " + std::to_string(lMAT3.specular_color_A) + ", \n" +
-				"specular_power				= " + std::to_string(lMAT3.specular_power) + ", \n" +
-				"detail_map_scale			= " + std::to_string(lMAT3.detail_map_scale) + ", \n" +
-				"bump_map_scale				= " + std::to_string(lMAT3.bump_map_scale) + ", \n" +
-				"reflection_scale			= " + std::to_string(lMAT3.reflection_scale) + ", \n" +
-				"precipitation_offset		= " + std::to_string(lMAT3.precipitation_offset) + ", \n" +
-				"specular_map_power_scale	= " + std::to_string(lMAT3.specular_map_power_scale) + ", \n" +
-				"specular_bloom_floor		= " + std::to_string(lMAT3.specular_bloom_floor) + ", \n" +
-				"ambient_light_scale		= " + std::to_string(lMAT3.ambient_light_scale) + ", \n" +
-				"source_blend				= " + std::to_string(lMAT3.source_blend) + ", \n" +
-				"destination_blend			= " + std::to_string(lMAT3.destination_blend) + ", \n" +
-				"alpha_test_function		= " + std::to_string(lMAT3.alpha_test_function) + ", \n" +
-				"alpha_test_threshold		= " + std::to_string(lMAT3.alpha_test_threshold) + ", \n" +
-				"final_alpha_multiply		= " + std::to_string(lMAT3.final_alpha_multiply),
-				parent);
 		}
 		break;
 	}
+	case (UINT('MATE')):
+	{
+		while (Seek < EndSection)
+		{
+			SMAT3 lMAT3;
+			RIFFStream->Read(&lMAT3, Seek, sizeof(lMAT3) - 4);
+			int temp = sizeof(lMAT3) - 4;
+			Seek = Seek + sizeof(lMAT3) - 4;
+			lMAT3.zbias = 0.0;
+			MAT3->push_back(lMAT3);
+		}
+			break;
+		}
 	case (UINT('EMT1')):
 	{
 		while (Seek < EndSection)
@@ -332,38 +761,21 @@ HRESULT RIFF::ReadSection(int parent)
 		}
 		break;
 	}
-	case (UINT('VERT')):
+	case (UINT('SGVL')):
 	{
-		if (CurrVERB.VERT != NULL)
-		{
-			VERB->at(VERB->size() - 1).VERT = CurrVERB.VERT;
-		}
-		CurrVERB = { NULL,NULL,NULL };
-		VERB->push_back(CurrVERB);
 		int count = 0;
-		CurrVERB.VERT = new std::vector<SVERT>();
 		while (Seek < EndSection)
 		{
-			SVERT lVERT;
-			RIFFStream->Read(&lVERT, Seek, sizeof(lVERT));
-			int temp = sizeof(lVERT);
-			Seek = Seek + sizeof(lVERT);
-			CurrVERB.VERT->push_back(lVERT);
-			WriteData(
-				std::to_string(count) + "; " +
-				std::to_string(lVERT.position_x) + ", " +
-				std::to_string(lVERT.position_y) + ", " +
-				std::to_string(lVERT.position_z) + ", " +
-				std::to_string(lVERT.normal_x) + ", " +
-				std::to_string(lVERT.normal_y) + ", " +
-				std::to_string(lVERT.normal_z) + ", " +
-				std::to_string(lVERT.texture_mapping_x) + ", " +
-				std::to_string(lVERT.texture_mapping_y),
-				parent);
+			SSGVL lSGVL;
+			RIFFStream->Read(&lSGVL, Seek, sizeof(lSGVL));
+			int temp = sizeof(lSGVL);
+			Seek = Seek + sizeof(lSGVL);
+			SGVL->push_back(lSGVL);
 			count++;
 		}
 		break;
 	}
+	
 	case (UINT('MDLG')):
 	{
 
@@ -424,6 +836,7 @@ HRESULT RIFF::ReadSection(int parent)
 	}
 	case (UINT('VERB')):
 	{
+		//CurrVERB = new SVERB();
 		int count = 0;
 
 		while (Seek < EndSection)
@@ -438,8 +851,71 @@ HRESULT RIFF::ReadSection(int parent)
 
 			count++;
 		}
-		VERB->at(VERB->size() - 1) = CurrVERB;
+		VERB->push_back(CurrVERB);
 		//VERB->push_back(CurrVERB);
+		break;
+	}
+	case (UINT('VERT')):
+	{
+		
+		if (CurrVERB.VERT != NULL)
+		{
+			VERB->push_back(CurrVERB);
+		}
+		CurrVERB = { NULL,NULL,NULL };
+		//VERB->push_back(CurrVERB);
+		int count = 0;
+		CurrVERB.VERT = new std::vector<SVERT>();
+		while (Seek < EndSection)
+		{
+			SVERT lVERT;
+			RIFFStream->Read(&lVERT, Seek, sizeof(lVERT));
+			int temp = sizeof(lVERT);
+			Seek = Seek + sizeof(lVERT);
+			CurrVERB.VERT->push_back(lVERT);
+			WriteData(
+				std::to_string(count) + "; " +
+				std::to_string(lVERT.position_x) + ", " +
+				std::to_string(lVERT.position_y) + ", " +
+				std::to_string(lVERT.position_z) + ", " +
+				std::to_string(lVERT.normal_x) + ", " +
+				std::to_string(lVERT.normal_y) + ", " +
+				std::to_string(lVERT.normal_z) + ", " +
+				std::to_string(lVERT.texture_mapping_x) + ", " +
+				std::to_string(lVERT.texture_mapping_y),
+				parent);
+			count++;
+		}
+		break;
+	}
+	case (UINT('BMAP')):
+	{
+		int VERBIndex = 0;
+		RIFFStream->Read(&VERBIndex, Seek, sizeof(VERBIndex));
+		Seek = Seek + sizeof(VERBIndex);
+		SBMAP lBMAP;
+		CurrVERB.BMAP = new std::vector<SBMAP>();
+		while (Seek < EndSection)
+		{
+			RIFFStream->Read(&lBMAP, Seek, sizeof(lBMAP));
+			Seek = Seek + sizeof(lBMAP);
+			CurrVERB.BMAP->push_back(lBMAP);
+		}
+		break;
+	}
+	case (UINT('SKIN')):
+	{
+		int VERBIndex = 0;
+		RIFFStream->Read(&VERBIndex, Seek, sizeof(VERBIndex));
+		Seek = Seek + sizeof(VERBIndex);
+		SSKIN lSKIN;
+		CurrVERB.SKIN = new std::vector<SSKIN>();
+		while (Seek < EndSection)
+		{
+			RIFFStream->Read(&lSKIN, Seek, sizeof(lSKIN));
+			Seek = Seek + sizeof(lSKIN);
+			CurrVERB.SKIN->push_back(lSKIN);
+		}
 		break;
 	}
 	case (UINT('VISL')):
@@ -450,36 +926,250 @@ HRESULT RIFF::ReadSection(int parent)
 		}
 		break;
 	}
-	case (UINT('BMAP')):
+
+	case (UINT('VISC')):
 	{
-		int VERBIndex = 0;
-		RIFFStream->Read(&VERBIndex, Seek, sizeof(VERBIndex));
-		Seek = Seek + sizeof(VERBIndex);
-		SBMAP lBMAP;
-		VERB->at(VERBIndex).BMAP = new std::vector<SBMAP>();
-		while (Seek < EndSection)
+		SVisible lVis;
+		SVISI lVISI;
+		std::string str = "";
+		std::vector<char> lCode;
+		std::vector<std::string> Result;
+		str.resize(Temp.Size);
+		RIFFStream->Read(&str[0], Seek, Temp.Size);
+		Seek = Seek + Temp.Size;
+
+		Result = ConvertVisAnim(str, 2, 2, 0);
+
+		
+		int ui = 0;
+		for (ui = 0; ui < VISI->size(); ui++)
 		{
-			RIFFStream->Read(&lBMAP, Seek, sizeof(lBMAP));
-			Seek = Seek + sizeof(lBMAP);
-			VERB->at(VERBIndex).BMAP->push_back(lBMAP);
+			if (VISI->at(ui).CodeF)
+			{
+				if (VISI->at(ui).name == Result[0])
+				{
+					break;
+				}
+			}
+		}
+		if (ui < VISI->size())
+		{
+			VISI->push_back(VISI->at(ui));
+		}
+		else
+		{
+			lVISI.Default = 1;
+			lVISI.CodeF = true;
+			lVISI.Code = Result[1];
+			lVISI.name = Result[0];
+			if (Result.size() == 3)
+			{
+				lVISI.LagF = true;
+				lVISI.Lag = std::atof(Result[2].c_str());
+			}
+			VISI->push_back(lVISI);
+			UniVISI++;
+		}
+		
+		break;
+	}
+
+	case (UINT('VINC')):
+	{
+		SVisible lVis;
+		SVISI lVISI;
+		std::string str = "";
+		std::vector<char> lCode;
+		std::vector<std::string> Result;
+		str.resize(Temp.Size);
+		RIFFStream->Read(&str[0], Seek, Temp.Size);
+		Seek = Seek + Temp.Size;
+
+			Result = ConvertVisAnim(str, 2, 2, 0);
+
+
+			int ui = 0;
+			for (ui = 0; ui < VISI->size(); ui++)
+			{
+				if (VISI->at(ui).CodeF)
+				{
+					if (VISI->at(ui).name == Result[0])
+					{
+						break;
+					}
+				}
+			}
+			if (ui < VISI->size())
+			{
+				VISI->push_back(VISI->at(ui));
+			}
+			else
+			{
+				lVISI.Default = false;
+				lVISI.CodeF = true;
+				lVISI.Code = Result[1];
+				lVISI.name = Result[0];
+				if (Result.size() == 3)
+				{
+					lVISI.LagF = true;
+					lVISI.Lag = std::atof(Result[2].c_str());
+				}
+				VISI->push_back(lVISI);
+				UniVISI++;
+			}
+
+		break;
+	}
+	case (UINT('VISS')):
+	{
+		SVisible lVis;
+		SVISI lVISI;
+		std::string str = "";
+		std::vector<char> lCode;
+		std::vector<std::string> Result;
+		str.resize(Temp.Size);
+		RIFFStream->Read(&str[0], Seek, Temp.Size);
+		Seek = Seek + Temp.Size;
+
+			Result = ConvertVisAnim(str, 4, 1, 0);
+
+			int ui = 0;
+			for (ui = 0; ui < VISI->size(); ui++)
+			{
+				if (VISI->at(ui).SimF)
+				{
+					if (VISI->at(ui).name == Result[0])
+					{
+						break;
+					}
+				}
+			}
+			if (ui < VISI->size())
+			{
+				VISI->push_back(VISI->at(ui));
+			}
+			else
+			{
+				lVISI.Default = 1;
+				lVISI.SimF = true;
+				lVISI.Sim.Variable = Result[1];
+				lVISI.Sim.Units = Result[2];
+				if (Result.size() == 4)
+				{				
+					lVISI.Sim.Bias = std::atof(Result[3].c_str());
+				}
+				if (Result.size() == 5)
+				{
+					lVISI.LagF = true;
+					lVISI.Lag = std::atof(Result[4].c_str());
+				}
+				lVISI.name = Result[0];
+				VISI->push_back(lVISI);
+				UniVISI++;
+			}
+
+		break;
+	}
+	case (UINT('XAPS')):
+	{
+		SAnimationPart lVis;
+		SVISI lVISI;
+		std::string str = "";
+		std::vector<char> lCode;
+		std::vector<std::string> Result;
+		str.resize(Temp.Size);
+		RIFFStream->Read(&str[0], Seek, Temp.Size);
+		Seek = Seek + Temp.Size;
+		Result = ConvertVisAnim(str, 4, 1, 1);
+		if (Result.size() > 0)
+		{
+			std::string name = "custom_anim_" + Result[0] + "_";
 		}
 		break;
 	}
-	case (UINT('SKIN')):
+	case (UINT('XAPC')):
 	{
-		int VERBIndex = 0;
-		RIFFStream->Read(&VERBIndex, Seek, sizeof(VERBIndex));
-		Seek = Seek + sizeof(VERBIndex);
-		SSKIN lSKIN;
-		VERB->at(VERBIndex).SKIN = new std::vector<SSKIN>();
-		while (Seek < EndSection)
+		SAnimationPart lVis;
+		SVISI lVISI;
+		std::string str = "";
+		std::vector<char> lCode;
+		std::vector<std::string> Result;
+		str.resize(Temp.Size);
+		RIFFStream->Read(&str[0], Seek, Temp.Size);
+		Seek = Seek + Temp.Size;
+		Result = ConvertVisAnim(str, 4, 1, 1);
+		if (Result.size() > 0)
 		{
-			RIFFStream->Read(&lSKIN, Seek, sizeof(lSKIN));
-			Seek = Seek + sizeof(lSKIN);
-			VERB->at(VERBIndex).SKIN->push_back(lSKIN);
+			std::string name = "custom_anim_" + Result[0] + "_";
 		}
 		break;
 	}
+	case (UINT('VINS')):
+	{
+		SVisible lVis;
+		SVISI lVISI;
+		std::string str = "";
+		std::vector<char> lCode;
+		std::vector<std::string> Result;
+		str.resize(Temp.Size);
+		RIFFStream->Read(&str[0], Seek, Temp.Size);
+		Seek = Seek + Temp.Size;
+		Result = ConvertVisAnim(str, 4, 1, 0);
+
+		int ui = 0;
+		for (ui = 0; ui < VISI->size(); ui++)
+		{
+			if (VISI->at(ui).SimF)
+			{
+				if (VISI->at(ui).name == Result[0])
+				{
+					break;
+				}
+			}
+		}
+		if (ui < VISI->size())
+		{
+			VISI->push_back(VISI->at(ui));
+		}
+		else
+		{
+			lVISI.Default = 0;
+			lVISI.SimF = true;
+			lVISI.Sim.Variable = Result[1];
+			lVISI.Sim.Units = Result[2];
+			if (Result.size() == 4)
+			{
+				lVISI.Sim.Bias = std::atof(Result[3].c_str());
+			}
+			if (Result.size() == 5)
+			{
+				lVISI.LagF = true;
+				lVISI.Lag = std::atof(Result[4].c_str());
+			}
+			lVISI.name = Result[0];
+			VISI->push_back(lVISI);
+			UniVISI++;
+		}
+		break;
+	}
+
+	case (UINT('SGBN')):
+	{
+		SSGBN lSGBN;
+		std::vector<char> lBoneName;
+		lBoneName.resize(64);
+		while (Seek < EndSection)
+		{
+			lSGBN.bone_name = "";
+			RIFFStream->Read(&lBoneName[0], Seek, 64);
+			Seek = Seek + 64;
+			lSGBN.bone_name = std::string(&lBoneName[0]);
+			SGBN->push_back(lSGBN);
+		}
+
+		break;
+	}
+	
 	case (UINT('LODT')):
 	{
 		while (Seek < EndSection)
@@ -513,10 +1203,12 @@ HRESULT RIFF::ReadSection(int parent)
 	}
 	case (UINT('ANIB')):
 	{
-		while (Seek < EndSection)
+		UINT64 off = Temp.Size + Seek;
+		//while (Seek < EndSection)
 		{
 			ReadSection(parent + 1);
 		}
+		Seek = off;
 		break;
 	}
 	case (UINT('XANL')):
@@ -530,8 +1222,8 @@ HRESULT RIFF::ReadSection(int parent)
 	case (UINT('XANI')):
 	{
 		SXANI lXANI;
-		RIFFStream->Read(&lXANI, Seek, sizeof(lXANI) - 16);
-		Seek = Seek + sizeof(lXANI) - 16;
+		RIFFStream->Read(&lXANI, Seek, sizeof(lXANI) - 16 - sizeof(SXAPS));
+		Seek = Seek + sizeof(lXANI) - 16 - sizeof(SXAPS);
 		lXANI.XANS = new std::vector<SXANS>();
 		std::string* lS = new std::string();
 		char s = ' ';
@@ -546,7 +1238,8 @@ HRESULT RIFF::ReadSection(int parent)
 		}
 		lXANI.typeParam = lS;
 		XANI->push_back(lXANI);
-		CurrXANI = &XANI->at(XANI->size() - 1);
+		CurrXANI = &(XANI->at(XANI->size() - 1));
+		CurrXANI = &(XANI->at(XANI->size() - 1));
 
 		break;
 	}
@@ -608,6 +1301,92 @@ HRESULT RIFF::ReadSection(int parent)
 		}
 		break;
 	}
+	case (UINT('REFP')):
+	{
+		SREFP lREFP;
+		int SG;
+		int SizePoint;
+		RIFFStream->Read(&SG, Seek, sizeof(SG));
+		Seek = Seek + sizeof(SG);
+		RIFFStream->Read(&SizePoint, Seek, sizeof(SizePoint));
+		Seek = Seek + sizeof(SizePoint);
+		std::vector<char> lName;
+		lName.resize(SizePoint);
+		RIFFStream->Read(&lName[0], Seek, SizePoint);
+		Seek = Seek + SizePoint;
+		std::string SName(&lName[0], SizePoint);
+		lREFP.scenegraph_reference = SG;
+		lREFP.name = SName;
+		REFP->push_back(lREFP);
+		break;
+	}
+	case (UINT('ATTO')):
+	{
+		while (Seek < EndSection)
+		{
+			SATTO lATTO;
+			int Magic1;
+			int Magic2;
+			short unk1;
+			int unk2;
+			int unk3;
+			int unk4;
+			int unk5;
+			short type;
+			short length;
+			short offset;
+			char fxName[80];
+			RIFFStream->Read(&Magic1, Seek, sizeof(Magic1));
+			Seek = Seek + sizeof(Magic1);
+			int StartOff = Seek;
+			RIFFStream->Read(&type, Seek, sizeof(type));
+			Seek = Seek + sizeof(type);
+			RIFFStream->Read(&length, Seek, sizeof(length));
+			Seek = Seek + sizeof(length);
+			RIFFStream->Read(&offset, Seek, sizeof(offset));
+			Seek = Seek + sizeof(offset);
+			RIFFStream->Read(&unk1, Seek, sizeof(unk1));
+			Seek = Seek + sizeof(unk1);
+			RIFFStream->Read(&unk2, Seek, sizeof(unk2));
+			Seek = Seek + sizeof(unk2);
+			RIFFStream->Read(&unk3, Seek, sizeof(unk3));
+			Seek = Seek + sizeof(unk3);
+			RIFFStream->Read(&unk4, Seek, sizeof(unk4));
+			Seek = Seek + sizeof(unk4);
+			RIFFStream->Read(&unk5, Seek, sizeof(unk5));
+			Seek = Seek + sizeof(unk5);
+			RIFFStream->Read(&fxName, Seek, sizeof(fxName));
+			Seek = Seek + sizeof(fxName);
+			std::vector<char> lParam;
+			lParam.resize(StartOff + offset - Seek);
+			RIFFStream->Read(&lParam[0], Seek, StartOff + offset - Seek);
+			Seek = Seek + StartOff + offset - Seek;
+			std::vector<char> lName;
+			lName.resize(length - offset);
+			RIFFStream->Read(&lName[0], Seek, length - offset);
+			Seek = Seek + length - offset;
+			std::string SFX(fxName);
+			std::string SParam(&lParam[0]);
+			std::string SName(&lName[0]);
+			RIFFStream->Read(&Magic2, Seek, sizeof(Magic2));
+			Seek = Seek + sizeof(Magic2);
+			lATTO.attachPoint = SName;
+			lATTO.fxName = SFX;
+			lATTO.length = length;
+			lATTO.Magic1 = Magic1;
+			lATTO.Magic2 = Magic2;
+			lATTO.offAttachPoint = offset;
+			lATTO.params = SParam;
+			lATTO.type = type;
+			lATTO.unk1 = unk1;
+			lATTO.unk2 = unk2;
+			lATTO.unk3 = unk3;
+			lATTO.unk4 = unk4;
+			lATTO.unk5 = unk5;
+			ATTO->push_back(lATTO);
+		}
+		break;
+	}
 	case (UINT('TANS')):
 	{
 		Seek = Temp.Size + Seek;
@@ -616,6 +1395,19 @@ HRESULT RIFF::ReadSection(int parent)
 	default:
 	{
 		Seek = Temp.Size + Seek;
+		bool bf = false;
+		for (int i = 0; i < BadSec->size(); i++)
+		{
+			if (BadSec->at(i) == UINT2(Temp.Name))
+			{
+				bf = true;
+			}
+		}
+		if (!bf)
+		{
+			MessageBoxExA(0, (std::string("Unknown section: ") + std::string(Temp.Name, 4)).c_str(), "Warning", MB_OK, 0);
+			BadSec->push_back(UINT2(Temp.Name));
+		}
 		break;
 	}
 	}

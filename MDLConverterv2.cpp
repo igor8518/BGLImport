@@ -252,184 +252,23 @@ void SetControllerKeys(Control *cont, SXANK *keys, int type, int ctt, int ct)
 	//ikeys->SortKeys();
 }
 
-BOOL DrawPart(RIFF* riff, SPART* part)
-{
-	if (Parts == 227)
-	{
-		int i = 0;
-		//return TRUE;
-	}
-	Parts++;
-	TriObject *object = CreateNewTriObject();
-	if (!object)
-		return FALSE;
-	Mesh* mesh = &object->GetMesh();
-	int CurrVerb = part->vertex_buffer_index;
-	std::vector<SVERT>* vert = riff->VERB->at(CurrVerb).VERT;
-	std::vector<SIND3>* inde = riff->IND3;
-	mesh->setNumVerts(part->vertex_count);
-	mesh->setNumFaces(part->index_count / 3);
-	for (int i = 0; i < part->vertex_count; i++)
-	{
-		mesh->setVert(i, Point3(vert->at(i + part->vertex_offset).position_x,
-			vert->at(i + part->vertex_offset).position_y,
-			vert->at(i + part->vertex_offset).position_z));
-	}
-	// Число вершин и граней в меш
-	for (int i = 0; i < (part->index_count / 3); i++)
-	{
-		mesh->faces[i].setVerts(inde->at(i + part->index_offset / 3).ind1,
-			inde->at(i + part->index_offset / 3).ind2,
-			inde->at(i + part->index_offset / 3).ind3);
-	}
+INode* OneNode = NULL;
+INode* BoneNode = NULL;
+////////////////////////
+Matrix3 tmO = Matrix3(
+	Point3(1, 0, 0),
+	Point3(0, 1, 0),
+	Point3(0, 0, 1),
+	Point3(0, 0, 0)
+);
 
-	// Устанавливаем видимость внешних ребер граней (диагональные ребра не видны)
-	for (int k = 0; k < (part->index_count / 3); k++) {
-		mesh->faces[k].setEdgeVisFlags(1, 1, 1);
-		//mesh->faces[k].setMatID(1);
-	}
-	// Назначаем UVW-координаты
-	//Matrix3 tm(1);
-	//tm.Scale(Point3(1, 1, 1));
-	//tm = Inverse(tm);
-	mesh->InvalidateTopologyCache();
-	INode *node = riff->gi->CreateObjectNode(object);
-	if (!node) {
-		delete object;
-		return FALSE;
-	}
+Matrix3 tmR = Matrix3(
+	Point3(1, 0, 0),
+	Point3(0, 1, 0),
+	Point3(0, 0, 1),
+	Point3(0, 0, 0)
+);
 
-	Matrix3 tm;
-	tm.IdentityMatrix();
-	
-	SAMAP amap = riff->AMAP->at(riff->SCEN->at(part->scenegraph_reference).amap_offset / 8);
-	
-
-	STRAN tran = riff->TRAN->at(amap.matrix);
-	Matrix3 tm1 = Matrix3(
-		Point3(tran.m00, tran.m01, tran.m02),
-		Point3(tran.m10, tran.m11, tran.m12),
-		Point3(tran.m20, tran.m21, tran.m22),
-		Point3(tran.m30, tran.m31, tran.m32)
-	); 
-	tm = tm * tm1;
-	short parent = riff->SCEN->at(part->scenegraph_reference).parent;
-	riff->SCEN->at(part->scenegraph_reference).parentNode = node;
-	/*if ((parent != -1)&& (riff->SCEN->at(parent).parentNode != NULL))
-	{
-		riff->SCEN->at(parent).parentNode->AttachChild(node);
-		int Num1 = riff->SCEN->at(parent).parentNode->NumChildren();
-		int Num2 = node->NumChildren();
-	}*/
-	
-	while (parent != -1)
-	{
-		SAMAP amap = riff->AMAP->at(riff->SCEN->at(parent).amap_offset / 8);
-		STRAN tran = riff->TRAN->at(amap.matrix);
-		tm1 = Matrix3(
-			Point3(tran.m00, tran.m01, tran.m02),
-			Point3(tran.m10, tran.m11, tran.m12),
-			Point3(tran.m20, tran.m21, tran.m22),
-			Point3(tran.m30, tran.m31, tran.m32)
-		); 
-
-		parent = riff->SCEN->at(parent).parent;
-		tm = tm * tm1;
-	};
-	
-	
-	
-	//tm.RotateX(deg2rad(90.0));
-	//node->SetNodeTM(0, tm);
-	Control* c;
-	c = node->GetTMController()->GetPositionController();
-	if (c && c->ClassID() != Class_ID(LININTERP_POSITION_CLASS_ID, 0)) {
-		Control *tcb = (Control*)riff->gi->CreateInstance(
-			CTRL_POSITION_CLASS_ID,
-			Class_ID(LININTERP_POSITION_CLASS_ID, 0));
-		if (!node->GetTMController()->SetPositionController(tcb)) {
-			tcb->DeleteThis();
-		}
-	}
-
-	c = node->GetTMController()->GetRotationController();
-	if (c && c->ClassID() != Class_ID(LININTERP_ROTATION_CLASS_ID, 0)) {
-		Control *tcb = (Control*)riff->gi->CreateInstance(
-			CTRL_ROTATION_CLASS_ID,
-			Class_ID(LININTERP_ROTATION_CLASS_ID, 0));
-		if (!node->GetTMController()->SetRotationController(tcb)) {
-			tcb->DeleteThis();
-		}
-	}
-
-
-	
-
-	int xanimInd = riff->SGAL->at(riff->SCEN->at(part->scenegraph_reference).amap_offset / 8).xanim;
-	if (xanimInd >= 0)
-	{
-		for (int i = 0; i < riff->XANI->size(); i++)
-		{
-			for (int j = 0; j < riff->XANI->at(i).XANS->size(); j++)
-			{
-				SXANS xans = riff->XANI->at(i).XANS->at(j);
-				if (xanimInd == riff->XANI->at(i).XANS->at(j).animation_ID)
-				{
-
-					if (node->GetTMController())
-					{
-						SuspendAnimate();
-						AnimateOn();
-						for (int k = 0; k < xans.XANK->size(); k++)
-						{
-							if (xans.XANK->at(k).type == 4)
-							{
-								Control *rotControl = node->GetTMController()->GetRotationController();
-								if (rotControl)
-								{
-									SetControllerKeys(
-										rotControl,
-										&xans.XANK->at(k),
-										KEY_ROT,
-										xans.XANK->size(),k);
-
-								}
-
-							}
-							else
-							{
-								Control *posControl = node->GetTMController()->GetPositionController();
-								if (posControl)
-								{
-									SetControllerKeys(
-										posControl,
-										&xans.XANK->at(k),
-										KEY_POS,
-										xans.XANK->size(),k);
-								}
-							}							
-						}
-					}
-				}
-				ResumeAnimate();
-			}
-		}
-
-	}					
-	tm.RotateX(deg2rad(90.0));
-	node->SetNodeTM(0, tm);
-	//node->Reference(object);
-	
-	//gi->AddNodeToScene(node);
-	std::wstring str = std::wstring(L"Part_" + std::to_wstring(Parts));
-	node->SetName(str.c_str());
-	//mesh->ApplyUVWMap(MAP_BOX, 1.0f, 1.0f, 1.0f, 0, 0, 0, 0, tm);
-	//i->RedrawViews();
-	riff->i->RedrawViews();
-	return TRUE;
-}
-INode* rootNode = NULL;
-int NodeIndex = -1;
 struct SParts
 {
 	INode* node;
@@ -440,19 +279,9 @@ struct SParts
 std::vector<SParts>* NodeParts = new std::vector<SParts>();
 std::vector<INode*>* Bones = new std::vector<INode*>();
 std::vector<StdMat2*>* Mtls = new std::vector<StdMat2*>();
-
-Matrix3 AddTM(STRAN tran, Matrix3 tm)
-{
-	Matrix3 tm1
-	({
-	Point3(tran.m00, tran.m01, -tran.m02),
-	Point3(tran.m10, tran.m11, -tran.m12),
-	Point3(-tran.m20, -tran.m21, tran.m22),
-	Point3(tran.m30, tran.m31, -tran.m32)
-	});
-	return tm * tm1;
-
-}
+int NodeIndex = -1;
+std::wstring StartUD = L"FSXML = <?xml version=\"1.0\" encoding=\"ISO-8859-1\" ?> <FSMakeMdlData version=\"9.0\"> ";
+std::wstring EndUD = L" </FSMakeMdlData>";
 
 std::string BytesToGUID(byte b[16])
 {
@@ -478,325 +307,697 @@ std::string BytesToGUID(byte b[16])
 	return std::string(ss, 37);
 }
 
-BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int ParentNodeIndex, INode * ParentNode, std::wstring nameAnim = L"")
+
+std::wstring SetAnim(RIFF *riff, INode* node, int CurrNode)
 {
-	int countParts = 0;
-	INode* OneNode = NULL;
-	Matrix3 tmO = Matrix3(
-		Point3(1, 0, 0),
-		Point3(0, 1, 0),
-		Point3(0, 0, 1),
-		Point3(0, 0, 0)
-	);
-	tmO.RotateX(deg2rad(90.0));
-	Matrix3 tmR = Matrix3(
-		Point3(1, 0, 0),
-		Point3(0, 1, 0),
-		Point3(0, 0, 1),
-		Point3(0, 0, 0)
-	);
+
+	int xanimInd = riff->SGAL->at(riff->SCEN->at(CurrNode).amap_offset / 8).xanim;
+	std::wstring nameAnim = L"";
+	if (xanimInd >= 0)
+	{
+		Control* c;
+		c = node->GetTMController()->GetPositionController();
+		if (c && c->ClassID() != Class_ID(LININTERP_POSITION_CLASS_ID, 0)) {
+			Control *tcb = (Control*)riff->gi->CreateInstance(
+				CTRL_POSITION_CLASS_ID,
+				Class_ID(LININTERP_POSITION_CLASS_ID, 0));
+			if (!node->GetTMController()->SetPositionController(tcb)) {
+				tcb->DeleteThis();
+			}
+		}
+
+		c = node->GetTMController()->GetRotationController();
+		if (c && c->ClassID() != Class_ID(LININTERP_ROTATION_CLASS_ID, 0)) {
+			Control *tcb = (Control*)riff->gi->CreateInstance(
+				CTRL_ROTATION_CLASS_ID,
+				Class_ID(LININTERP_ROTATION_CLASS_ID, 0));
+			if (!node->GetTMController()->SetRotationController(tcb)) {
+				tcb->DeleteThis();
+			}
+		}
+		nameAnim = L"NA";
+		for (int i = 0; i < riff->XANI->size(); i++)
+		{
+
+			for (int j = 0; j < riff->XANI->at(i).XANS->size(); j++)
+			{
+				SXANS xans = riff->XANI->at(i).XANS->at(j);
+				if (xanimInd == riff->XANI->at(i).XANS->at(j).animation_ID)
+				{
+
+					if (node->GetTMController())
+					{
+						if (nameAnim == L"NA")
+						{
+							SuspendAnimate();
+							AnimateOn();
+							std::string ss = BytesToGUID(riff->XANI->at(i).guid);
+
+							for (int jj = 0; jj < riff->AnimationXML->size(); jj++)
+							{
+								if (std::strcmp(strlwr((char*)ss.c_str()), strlwr((char*)riff->AnimationXML->at(jj).guid.c_str())) == 0)
+								{
+									nameAnim = std::wstring(riff->AnimationXML->at(jj).name.begin(), riff->AnimationXML->at(jj).name.end());
+									break;
+								}
+							}
+							/////////////////////////////////////
+
+
+							Control *TControl = node->GetTMController();
+							DefNoteTrack* nt = new DefNoteTrack();
+							TControl->AddNoteTrack(nt);
+							nt->AddNewKey(0, 0);
+							nt->AddNewKey(0, 0);
+							NoteKeyTab keys;
+							keys.Init();
+							std::wstring anStart = L"ANIM_START = \"" + nameAnim + L"\"";
+							std::wstring anEnd = L"ANIM_END = \"" + nameAnim + L"\"";
+							NoteKey* nk = new NoteKey(0, anStart.c_str());
+							nk->time = 0;
+							keys.Append(1, &nk);
+
+							nk = new NoteKey(0, anEnd.c_str());
+
+							nk->time = riff->XANI->at(i).animation_length * GetTicksPerFrame();
+							keys.Append(1, &nk);
+
+							nt->keys = keys;
+						}
+						////////////////////////////////////////
+
+
+						for (int k = 0; k < xans.XANK->size(); k++)
+						{
+							if (xans.XANK->at(k).type == 4)
+							{
+								Control *rotControl = node->GetTMController()->GetRotationController();
+								if (rotControl)
+								{
+									SetControllerKeys(
+										rotControl,
+										&xans.XANK->at(k),
+										KEY_ROT,
+										xans.XANK->size(), k);
+
+								}
+
+							}
+							else
+							{
+								Control *posControl = node->GetTMController()->GetPositionController();
+								if (posControl)
+								{
+									SetControllerKeys(
+										posControl,
+										&xans.XANK->at(k),
+										KEY_POS,
+										xans.XANK->size(), k);
+								}
+							}
+						}
+					}
+				}
+				ResumeAnimate();
+			}
+		}
+
+	}
+	return nameAnim;
+}
+
+INode* DrawPart(RIFF* riff, SPART* part, int LOD, int PartNo, std::wstring nameAnim, int nodeIndex)
+{
+	
+	NodeIndex++;
+	INode *node;
+	{
+		TriObject *object = CreateNewTriObject();
+		if (!object)
+			return FALSE;
+		Mesh* mesh = &object->GetMesh();
+		int CurrVerb = part->vertex_buffer_index;
+		std::vector<SVERT>* vert = riff->VERB->at(CurrVerb).VERT;
+		std::vector<SIND3>* inde = riff->IND3;
+
+		std::vector<Point3>* tempVert = new std::vector<Point3>();
+		std::vector<Point3>* tempVertN = new std::vector<Point3>();
+		Point3 tp;
+		Point3 tpn;
+		std::vector<int>* tempInd = new std::vector<int>(part->vertex_count);
+		int fi = 0;
+		for (int ii = 0; ii < part->vertex_count; ii++)
+		{
+			bool find = false;
+			tp = {
+				vert->at(ii + part->vertex_offset).position_x,
+				vert->at(ii + part->vertex_offset).position_y,
+				-vert->at(ii + part->vertex_offset).position_z
+			};
+			tpn = {
+				vert->at(ii + part->vertex_offset).normal_x,
+				vert->at(ii + part->vertex_offset).normal_y,
+				-vert->at(ii + part->vertex_offset).normal_z
+			};
+			int iii = 0;
+			for (iii = 0; iii < tempVert->size(); iii++)
+			{
+				if (tp == tempVert->at(iii))
+				{
+					if (tpn == tempVertN->at(iii))
+					{
+						find = true;
+						break;
+					}
+				}
+			}
+			if (!find)
+			{
+				tempVert->push_back(tp);
+				tempVertN->push_back(tpn);
+				tempInd->at(ii) = fi;
+
+				fi++;
+			}
+			else
+			{
+				tempInd->at(ii) = iii;
+			}
+		}
+		std::vector<Point3>* tempTVert = new std::vector<Point3>();
+		std::vector<int>* tempTInd = new std::vector<int>(part->vertex_count);
+		fi = 0;
+		for (int ii = 0; ii < part->vertex_count; ii++)
+		{
+			bool find = false;
+			tp = {
+				vert->at(ii + part->vertex_offset).texture_mapping_x,
+				vert->at(ii + part->vertex_offset).texture_mapping_y,
+				float(0.0)
+			};
+			int iii = 0;
+			for (iii = 0; iii < tempTVert->size(); iii++)
+			{
+				if (tp == tempTVert->at(iii))
+				{
+					find = true;
+					break;
+				}
+			}
+			if (!find)
+			{
+				tempTVert->push_back(tp);
+				tempTInd->at(ii) = fi;
+				fi++;
+			}
+			else
+			{
+				tempTInd->at(ii) = iii;
+			}
+		}
+
+		std::vector<Point3>* tempNVert = new std::vector<Point3>();
+		std::vector<int>* tempNInd = new std::vector<int>(part->vertex_count);
+		fi = 0;
+		for (int ii = 0; ii < part->vertex_count; ii++)
+		{
+			bool find = false;
+			tp = {
+				vert->at(ii + part->vertex_offset).normal_x,
+				vert->at(ii + part->vertex_offset).normal_y,
+				-vert->at(ii + part->vertex_offset).normal_z
+			};
+			int iii = 0;
+			for (iii = 0; iii < tempNVert->size(); iii++)
+			{
+				if (tp == tempNVert->at(iii))
+				{
+					find = true;
+					break;
+				}
+			}
+			if (!find)
+			{
+				tempNVert->push_back(tp);
+				tempNInd->at(ii) = fi;
+				fi++;
+			}
+			else
+			{
+				tempNInd->at(ii) = iii;
+			}
+		}
+
+		mesh->SpecifyNormals();
+		MeshNormalSpec *ns = mesh->GetSpecifiedNormals();
+		ns->ClearNormals();
+		ns->SetNumNormals(tempNVert->size());
+		ns->CheckNormals();
+
+		mesh->setNumVerts(tempVert->size());
+		mesh->setNumTVerts(tempTVert->size());
+
+		for (int ii = 0; ii < tempVert->size(); ii++)
+		{
+			mesh->setVert(ii, tempVert->at(ii));
+		}
+		for (int ii = 0; ii < tempTVert->size(); ii++)
+		{
+			mesh->setTVert(ii, tempTVert->at(ii));
+		}
+		for (int ii = 0; ii < tempNVert->size(); ii++)
+		{
+			ns->Normal(ii) = tempNVert->at(ii);
+			ns->SetNormalExplicit(ii, true);
+		}
+		mesh->setNumFaces(part->index_count / 3);
+		mesh->setNumTVFaces(part->index_count / 3);
+		ns->SetNumFaces(part->index_count / 3);
+		for (int ii = 0; ii < (part->index_count / 3); ii++)
+		{
+
+			mesh->faces[ii].setVerts(
+				tempInd->at((inde->at(ii + part->index_offset / 3).ind3)),
+				tempInd->at((inde->at(ii + part->index_offset / 3).ind2)),
+				tempInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+			mesh->faces[ii].setEdgeVisFlags(1, 1, 1);
+
+			mesh->tvFace[ii].setTVerts(
+				tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)),
+				tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)),
+				tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+
+			//RVertex* rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+			//rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind1))));
+			//rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)));
+			//rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind2))));
+			//rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)));
+			//rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind3))));
+
+			mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind1))));
+			mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind2))));
+			mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind3))));
+
+			MeshNormalFace &nf = ns->Face(ii);
+			nf.SpecifyAll();
+			nf.SetNormalID(0, tempNInd->at((inde->at(ii + part->index_offset / 3).ind3)));
+			nf.SetNormalID(1, tempNInd->at((inde->at(ii + part->index_offset / 3).ind2)));
+			nf.SetNormalID(2, tempNInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+
+		}
+		AdjEdgeList* el = new AdjEdgeList(*mesh);
+		AdjFaceList * fl = new AdjFaceList(*mesh, *el);
+		FaceElementList * fe = new FaceElementList(*mesh, *fl);
+		for (int i = 0; i < fe->elem.Count(); i++)
+		{
+			mesh->faces[i].setSmGroup(fe->elem[i]);
+		}
+		for (int ii = 0; ii < tempVert->size(); ii++)
+		{
+			mesh->setNormal(ii, tempVertN->at(ii));
+		}
+
+		node = riff->gi->CreateObjectNode(object);
+		node->SetMtl(Mtls->at(part->material_index));
+		if (!node) {
+			delete object;
+			return FALSE;
+		}
+		SParts lNodeParts;
+		lNodeParts.LOD = LOD;
+		lNodeParts.node = node;
+		lNodeParts.Part = PartNo;
+		lNodeParts.Inds = tempInd;
+		NodeParts->push_back(lNodeParts);
+
+		mesh->buildNormals();
+		//mesh->buildBoundingBox();
+		//mesh->InvalidateEdgeList();
+		mesh->InvalidateGeomCache();
+		mesh->InvalidateTopologyCache();
+		
+
+	}
+	node->SetWireColor(RGB(255, 255, 255));
+	//nameAnim = SetAnim(riff, node, nodeIndex);
+	if (nameAnim == L"")
+	{
+		if (riff->SGVL->at(nodeIndex).vis_index >= 0)
+		{
+			std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(nodeIndex).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(nodeIndex).vis_index).name.end());
+			std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
+			node->SetUserPropBuffer(XMLVis.c_str());
+			node->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+		}
+		else
+		{
+			node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+		}
+	}
+	else
+	{
+		node->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+	}
+	return node;
+}
+
+INode* DrawPart2(RIFF* riff, SPART* part, int LOD, int PartNo, std::wstring nameAnim, int nodeIndex)
+{
+
+	NodeIndex++;
+	INode *node;
+	{
+		TriObject *object = CreateNewTriObject();
+		if (!object)
+			return FALSE;
+		Mesh* mesh = &object->GetMesh();
+		int CurrVerb = part->vertex_buffer_index;
+		std::vector<SVERT>* vert = riff->VERB->at(CurrVerb).VERT;
+		std::vector<SIND3>* inde = riff->IND3;
+		
+
+		//Создаем временный массив для подрезанных вершин
+		std::vector<Point3>* tempVert = new std::vector<Point3>();
+		//Создаем временный массив для ссылок на реальные вершины
+		std::vector<int>* tempInd = new std::vector<int>(part->vertex_count);
+		//Подрезаем вершины с одинаковыми координатами
+		int fi = 0;
+		for (int ii = 0; ii < part->vertex_count; ii++)
+		{
+			bool find = false;
+			Point3 tp = {
+			vert->at(ii + part->vertex_offset).position_x,
+			vert->at(ii + part->vertex_offset).position_y,
+			-vert->at(ii + part->vertex_offset).position_z
+			};
+
+			int iii = 0;
+			for (iii = 0; iii < tempVert->size(); iii++)
+			{
+				if (tp == tempVert->at(iii))
+				{
+					find = true;
+					break;
+				}
+			}
+			if (!find)
+			{
+				tempVert->push_back(tp);
+				tempInd->at(ii) = fi;
+
+				fi++;
+			}
+			else
+			{
+				tempInd->at(ii) = iii;
+			}
+		}
+
+		
+		//Временный массив для текстурных координат
+		std::vector<Point3>* tempTVert = new std::vector<Point3>();
+		for (int ii = 0; ii < part->vertex_count; ii++)
+		{
+			Point3 tp = {
+			vert->at(ii + part->vertex_offset).texture_mapping_x,
+			vert->at(ii + part->vertex_offset).texture_mapping_y,
+			float(0.0)
+			};
+			tempTVert->push_back(tp);
+		}
+
+		//Определяем количество вершин, текстурных координат, треугольников, текстурных треугольников
+		mesh->setNumVerts(tempVert->size());
+		mesh->setNumTVerts(tempTVert->size());
+		mesh->setNumFaces(part->index_count / 3);
+		mesh->setNumTVFaces(part->index_count / 3);
+		//Строим вершины
+		for (int ii = 0; ii < tempVert->size(); ii++)
+		{
+			mesh->setVert(ii, tempVert->at(ii));
+		}
+		//Строим текстурные вершины
+		for (int ii = 0; ii < tempTVert->size(); ii++)
+		{
+			mesh->setTVert(ii, tempTVert->at(ii));
+		}
+		std::vector<Point3>* tempNVert = new std::vector<Point3>(part->vertex_count);
+		//std::vector<int>* tempNInd = new std::vector<int>(part->vertex_count);
+		fi = 0;
+		for (int ii = 0; ii < part->vertex_count; ii++)
+		{
+	
+			Point3 tp = {
+			vert->at(ii + part->vertex_offset).normal_x,
+			vert->at(ii + part->vertex_offset).normal_y,
+			-vert->at(ii + part->vertex_offset).normal_z
+			};
+			tempNVert->push_back(tp);
+		}
+
+
+
+		mesh->SpecifyNormals();
+		MeshNormalSpec *ns = mesh->GetSpecifiedNormals();
+		ns->ClearNormals();
+		ns->SetNumNormals(vert->size());
+		ns->CheckNormals();
+		ns->SetNumFaces(part->index_count / 3);
+		
+
+		
+		/*for (int ii = 0; ii < tempNVert->size(); ii++)
+		{
+			ns->Normal(ii) = tempNVert->at(ii);
+			ns->SetNormalExplicit(ii, true);
+		}*/
+		
+		//Устанавливаем количество нормалей вершин
+		
+		for (int ii = 0; ii < (part->index_count / 3); ii++)
+		{
+			//Устанавливаем треугольники
+			mesh->faces[ii].setVerts(
+				tempInd->at((inde->at(ii + part->index_offset / 3).ind3)),
+				tempInd->at((inde->at(ii + part->index_offset / 3).ind2)),
+				tempInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+			mesh->faces[ii].setEdgeVisFlags(1, 1, 1);
+
+			//Устанавливаем текстуры треугольников
+			mesh->tvFace[ii].setTVerts(
+				inde->at(ii + part->index_offset / 3).ind3,
+				inde->at(ii + part->index_offset / 3).ind2,
+				inde->at(ii + part->index_offset / 3).ind1);
+
+			/*mesh->tvFace[ii].setTVerts(
+				tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)),
+				tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)),
+				tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)));*/
+
+			//RVertex* rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+			//rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind1))));
+			//rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)));
+			//rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind2))));
+			//rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)));
+			//rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind3))));
+
+			mesh->setNormal(inde->at(ii + part->index_offset / 3).ind1, tempNVert->at(inde->at(ii + part->index_offset / 3).ind1));
+			mesh->setNormal(inde->at(ii + part->index_offset / 3).ind2, tempNVert->at(inde->at(ii + part->index_offset / 3).ind2));
+			mesh->setNormal(inde->at(ii + part->index_offset / 3).ind3, tempNVert->at(inde->at(ii + part->index_offset / 3).ind3));
+
+			MeshNormalFace &nf = ns->Face(ii);
+			nf.SpecifyAll();
+			nf.SetNormalID(0, tempInd->at((inde->at(ii + part->index_offset / 3).ind3)));
+			nf.SetNormalID(1, tempInd->at((inde->at(ii + part->index_offset / 3).ind2)));
+			nf.SetNormalID(2, tempInd->at((inde->at(ii + part->index_offset / 3).ind1)));
+
+		}
+
+
+		node = riff->gi->CreateObjectNode(object);
+		node->SetMtl(Mtls->at(part->material_index));
+		if (!node) {
+			delete object;
+			return FALSE;
+		}
+		SParts lNodeParts;
+		lNodeParts.LOD = LOD;
+		lNodeParts.node = node;
+		lNodeParts.Part = PartNo;
+		lNodeParts.Inds = tempInd;
+		NodeParts->push_back(lNodeParts);
+
+		//mesh->buildNormals();
+		mesh->buildBoundingBox();
+		mesh->InvalidateEdgeList();
+		mesh->InvalidateGeomCache();
+		//mesh->InvalidateTopologyCache();
+
+
+	}
+	node->SetWireColor(RGB(255, 255, 255));
+	nameAnim = SetAnim(riff, node, nodeIndex);
+	if (nameAnim == L"")
+	{
+		if (riff->SGVL->at(nodeIndex).vis_index >= 0)
+		{
+			std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(nodeIndex).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(nodeIndex).vis_index).name.end());
+			std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
+			node->SetUserPropBuffer(XMLVis.c_str());
+			node->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+		}
+		else
+		{
+			node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+		}
+	}
+	else
+	{
+		node->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+	}
+	return node;
+}
+Matrix3 AddTM(STRAN tran, Matrix3 tm)
+{
+	Matrix3 tm1
+	({
+		Point3(tran.m00, tran.m01, -tran.m02),
+		Point3(tran.m10, tran.m11, -tran.m12),
+		Point3(-tran.m20, -tran.m21, tran.m22),
+		Point3(tran.m30, tran.m31, -tran.m32)
+	});
+	return tm * tm1;
+
+}
+Matrix3 CalcTransform(RIFF* riff, int StartIndex, int useTMO = 0)
+{
+	
+	SAMAP amap = riff->AMAP->at(riff->SCEN->at(StartIndex).amap_offset / 8);
+	STRAN tran = riff->TRAN->at(amap.matrix);
+	Matrix3 tm;
+	tm.IdentityMatrix();
+	if (useTMO == 1)
+	{
+		tm.RotateX(deg2rad(-90.0));
+	}
+	else if (useTMO == 2)
+	{
+		tm.RotateX(deg2rad(90.0));
+	}
+
+	tm = AddTM(tran, tm);
+	int parent = riff->SCEN->at(StartIndex).parent;
+	while (parent != -1)
+	{
+		SAMAP amap = riff->AMAP->at(riff->SCEN->at(parent).amap_offset / 8);
+		STRAN tran = riff->TRAN->at(amap.matrix);
+		tm = AddTM(tran, tm);
+		parent = riff->SCEN->at(parent).parent;
+	};
+	
+	tm = tm * tmO;
+
+	return tm;
+}
+
+INode* rootNode = NULL;
+
+std::wstring EffectPath = L"C:\\GAMES\\LM\\P3Dv4\\Effects\\";
+std::string EffectPathA = "C:\\GAMES\\LM\\P3Dv4\\Effects\\";
+
+
+std::vector<float> GetArrFromString(LPSTR str)
+{
+	std::vector<float> a;
+	for (LPSTR p = strtok(str, ","); p; p = strtok(NULL, ",")) {
+		a.push_back(atof(p));
+	}
+	return a;
+}
+
+INode* CreateBone(RIFF* riff, int CurrNode, int ParentNodeIndex, INode* ParentBone)
+{
+	INode* node;
+	Object*  object;
+	//Object* object;
+	object = (Object*)riff->gi->CreateInstance(GEOMOBJECT_CLASS_ID, BONE_OBJ_CLASSID);
+	node = riff->gi->CreateObjectNode(object);
+	node->SetBoneNodeOnOff(TRUE, 0);
+	node->ShowBone(2);
+	node->SetRenderable(FALSE);
+	//object->GetParamBlock()->SetValue()
+	float LengthParent = 0.5;
+	if (riff->SGBR->at(ParentNodeIndex).bone_index >= 0)
+	{
+		if ((riff->SGBR->at(ParentNodeIndex).bone_index == 0) ||
+			(riff->SGBR->at(ParentNodeIndex).bone_index == 1))
+		{
+			int m = 0;
+		}
+
+		SAMAP amap = riff->AMAP->at(riff->SCEN->at(CurrNode).amap_offset / 8);
+		STRAN tran = riff->TRAN->at(amap.matrix);
+		Matrix3 tmt;
+		tmt.IdentityMatrix();
+		tmt = AddTM(tran, tmt);
+		Point3 VecLength = tmt.GetTrans();
+		LengthParent = VecLength.FLength();
+		Interval* interval = new Interval(0, 0);
+		float* LengthC = new float(0.0);
+		MaxSDK::AssetManagement::AssetUser* au = new MaxSDK::AssetManagement::AssetUser();
+		ParentBone->GetObjectRef()->GetParamBlock(boneobj_params)->GetValue(boneobj_length, TimeValue(0), *LengthC, *interval);
+		if (*LengthC < LengthParent)
+		{
+			ParentBone->GetObjectRef()->GetParamBlock(boneobj_params)->SetValue(boneobj_width, 0, LengthParent / 2);
+			ParentBone->GetObjectRef()->GetParamBlock(boneobj_params)->SetValue(boneobj_height, 0, LengthParent / 2);
+			ParentBone->GetObjectRef()->GetParamBlock(boneobj_params)->SetValue(boneobj_length, 0, LengthParent);
+		}
+		delete LengthC;
+	}
+	object->GetParamBlock(boneobj_params)->SetValue(boneobj_width, 0, LengthParent / 2);
+	object->GetParamBlock(boneobj_params)->SetValue(boneobj_height, 0, LengthParent / 2);
+	object->GetParamBlock(boneobj_params)->SetValue(boneobj_length, 0, LengthParent);
+
+	while (Bones->size() <= riff->SGBR->at(CurrNode).bone_index)
+	{
+		Bones->push_back(NULL);
+	}
+	Bones->at(riff->SGBR->at(CurrNode).bone_index) = node;
+	if (!node) {
+		delete object;
+		return FALSE;
+	}
+	return node;
+	
+}
+int CheckParts(RIFF* riff, int CurrNode)
+{
+	int count = 0;
 	for (int j = 0; j < riff->LODT->size(); j++)
 	{
 		for (int i = 0; i < riff->LODT->at(j).PART->size(); i++)
 		{
 			SPART *part = &riff->LODT->at(j).PART->at(i);
 
-
-			int typetri = part->type;
-			if (typetri == 1)
+			if (part->type == 1)
 			{
-				if (riff->LODT->at(j).PART->at(i).scenegraph_reference == ParentNodeIndex)
+				if (part->scenegraph_reference == CurrNode)
 				{
-					NodeIndex++;
-					if (NodeIndex == 40)
-					{
-						int m = 0;
-					}
-					TriObject *object = CreateNewTriObject();
-					if (!object)
-						return FALSE;
-					Mesh* mesh = &object->GetMesh();
-					int CurrVerb = part->vertex_buffer_index;
-					std::vector<SVERT>* vert = riff->VERB->at(CurrVerb).VERT;
-					std::vector<SIND3>* inde = riff->IND3;
 
-					std::vector<Point3>* tempVert = new std::vector<Point3>();
-					std::vector<Point3>* tempVertN = new std::vector<Point3>();
-					Point3 tp;
-					Point3 tpn;
-					std::vector<int>* tempInd = new std::vector<int>(part->vertex_count);
-					int fi = 0;
-					for (int ii = 0; ii < part->vertex_count; ii++)
-					{
-						bool find = false;
-						tp = {
-							vert->at(ii + part->vertex_offset).position_x,
-							vert->at(ii + part->vertex_offset).position_y,
-							-vert->at(ii + part->vertex_offset).position_z
-						};
-						tpn = {
-							vert->at(ii + part->vertex_offset).normal_x,
-							vert->at(ii + part->vertex_offset).normal_y,
-							-vert->at(ii + part->vertex_offset).normal_z
-						};
-						int iii = 0;
-						for (iii = 0; iii < tempVert->size(); iii++)
-						{
-							if (tp == tempVert->at(iii))
-							{
-								find = true;
-								break;
-							}
-						}
-						if (!find)
-						{
-							tempVert->push_back(tp);
-							tempVertN->push_back(tpn);
-							tempInd->at(ii) = fi;
-
-							fi++;
-						}
-						else
-						{
-							tempInd->at(ii) = iii;
-						}
-					}	
-					std::vector<Point3>* tempTVert = new std::vector<Point3>();
-					std::vector<int>* tempTInd = new std::vector<int>(part->vertex_count);
-					fi = 0;
-					for (int ii = 0; ii < part->vertex_count; ii++)
-					{
-						bool find = false;
-						tp = {
-							vert->at(ii + part->vertex_offset).texture_mapping_x,
-							vert->at(ii + part->vertex_offset).texture_mapping_y,
-							float(0.0)
-						};
-						int iii = 0;
-						for (iii = 0; iii < tempTVert->size(); iii++)
-						{
-							if (tp == tempTVert->at(iii))
-							{
-								find = true;
-								break;
-							}
-						}
-						if (!find)
-						{
-							tempTVert->push_back(tp);
-							tempTInd->at(ii) = fi;
-							fi++;
-						}
-						else
-						{
-							tempTInd->at(ii) = iii;
-						}
-					}
-
-					std::vector<Point3>* tempNVert = new std::vector<Point3>();
-					std::vector<int>* tempNInd = new std::vector<int>(part->vertex_count);
-					fi = 0;
-					for (int ii = 0; ii < part->vertex_count; ii++)
-					{
-						bool find = false;
-						tp = {
-							vert->at(ii + part->vertex_offset).normal_x,
-							vert->at(ii + part->vertex_offset).normal_y,
-							-vert->at(ii + part->vertex_offset).normal_z
-						};
-						int iii = 0;
-						for (iii = 0; iii < tempNVert->size(); iii++)
-						{
-							if (tp == tempNVert->at(iii))
-							{
-								find = true;
-								break;
-							}
-						}
-						if (!find)
-						{
-							tempNVert->push_back(tp);
-							tempNInd->at(ii) = fi;
-							fi++;
-						}
-						else
-						{
-							tempNInd->at(ii) = iii;
-						}
-					}
-
-					mesh->SpecifyNormals();
-					MeshNormalSpec *ns = mesh->GetSpecifiedNormals();
-					ns->ClearNormals();
-					ns->SetNumNormals(tempNVert->size());
-					ns->CheckNormals();
-					
-					mesh->setNumVerts(tempVert->size());
-					mesh->setNumTVerts(tempTVert->size());
-
-					for (int ii = 0; ii < tempVert->size(); ii++)
-					{						
-						mesh->setVert(ii, tempVert->at(ii));
-					}
-					for (int ii = 0; ii < tempTVert->size(); ii++)
-					{
-						mesh->setTVert(ii, tempTVert->at(ii));
-					}
-					for (int ii = 0; ii < tempNVert->size(); ii++)
-					{
-						ns->Normal(ii) = tempNVert->at(ii);
-						ns->SetNormalExplicit(ii, true);
-					}
-					mesh->setNumFaces(part->index_count / 3);
-					mesh->setNumTVFaces(part->index_count / 3);
-					ns->SetNumFaces(part->index_count / 3);
-					for (int ii = 0; ii < (part->index_count / 3 ); ii++)
-					{
-
-						mesh->faces[ii].setVerts(
-							tempInd->at((inde->at(ii + part->index_offset / 3).ind3)),
-							tempInd->at((inde->at(ii + part->index_offset / 3).ind2)),
-							tempInd->at((inde->at(ii + part->index_offset / 3).ind1)));
-						mesh->faces[ii].setEdgeVisFlags(1, 1, 1);
-
-						mesh->tvFace[ii].setTVerts(
-							tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)),
-							tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)),
-							tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)));
-
-						/*RVertex* rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)));
-						rv->rn.
-						rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind1))));
-						rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)));
-						rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind2))));
-						rv = mesh->getRVertPtr(tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)));
-						rv->rn.addNormal(tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind3))));*/
-
-						//mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind1)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind1))));
-						//mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind2)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind2))));
-						//mesh->setNormal(tempTInd->at((inde->at(ii + part->index_offset / 3).ind3)), tempNVert->at(tempNInd->at((inde->at(ii + part->index_offset / 3).ind3))));
-						
-						MeshNormalFace &nf = ns->Face(ii);
-						nf.SpecifyAll();
-						nf.SetNormalID(0, tempNInd->at((inde->at(ii + part->index_offset / 3).ind3)));
-						nf.SetNormalID(1, tempNInd->at((inde->at(ii + part->index_offset / 3).ind2)));
-						nf.SetNormalID(2, tempNInd->at((inde->at(ii + part->index_offset / 3).ind1)));
-						
-					}					
-					for (int ii = 0; ii < tempVert->size(); ii++)
-					{
-						mesh->setNormal(ii, tempVertN->at(ii));
-					}
-					INode *node = riff->gi->CreateObjectNode(object);
-					node->SetMtl(Mtls->at(part->material_index));
-					if (!node) {
-						delete object;
-						return FALSE;
-					}
-					SParts lNodeParts;
-					lNodeParts.LOD = j;
-					lNodeParts.node = node;
-					lNodeParts.Part = i;
-					lNodeParts.Inds = tempInd;
-					NodeParts->push_back(lNodeParts);
-
-
-					if (ParentNode != NULL)
-					{
-						ParentNode->AttachChild(node);
-					}
-					int parent = ParentNodeIndex;
-
-					SAMAP amap = riff->AMAP->at(riff->SCEN->at(ParentNodeIndex).amap_offset / 8);
-					STRAN tran = riff->TRAN->at(amap.matrix);
-					Matrix3 tm;
-					tm.IdentityMatrix();
-					tm = AddTM(tran, tm);
-					parent = riff->SCEN->at(parent).parent;
-					while (parent != -1)
-					{
-						SAMAP amap = riff->AMAP->at(riff->SCEN->at(parent).amap_offset / 8);
-						STRAN tran = riff->TRAN->at(amap.matrix);
-						tm = AddTM(tran, tm);
-						parent = riff->SCEN->at(parent).parent;
-					};
-					tm = tm * tmO;
-					node->SetNodeTM(0, tm);
-					node->SetWireColor(RGB(255, 255, 255));
-					//tm.NoTrans();
-					//ns->Transform(tmO);
-					//node->ResetTransform(0, FALSE);
-					
-
-					//int xanimInd = riff->SGAL->at(riff->SCEN->at(ParentNodeIndex).amap_offset / 8).xanim;
-					/*if (xanimInd >= 0)
-					{
-						for (int i = 0; i < riff->XANI->size(); i++)
-						{
-							for (int j = 0; j < riff->XANI->at(i).XANS->size(); j++)
-							{
-								SXANS xans = riff->XANI->at(i).XANS->at(j);
-								if (xanimInd == riff->XANI->at(i).XANS->at(j).animation_ID)
-								{
-
-									if (node->GetTMController())
-									{
-										SuspendAnimate();
-										AnimateOn();
-										for (int k = 0; k < xans.XANK->size(); k++)
-										{
-											if (xans.XANK->at(k).type == 4)
-											{
-												Control *rotControl = node->GetTMController()->GetRotationController();
-												if (rotControl)
-												{
-													SetControllerKeys(
-														rotControl,
-														&xans.XANK->at(k),
-														KEY_ROT,
-														xans.XANK->size(), k);
-
-												}
-
-											}
-											else
-											{
-												Control *posControl = node->GetTMController()->GetPositionController();
-												if (posControl)
-												{
-													SetControllerKeys(
-														posControl,
-														&xans.XANK->at(k),
-														KEY_POS,
-														xans.XANK->size(), k);
-												}
-											}
-										}
-									}
-								}
-								ResumeAnimate();
-							}
-						}
-
-					}*/
-					
-					mesh->buildNormals();
-					mesh->InvalidateGeomCache();
-					mesh->InvalidateTopologyCache();
-					
-					if (nameAnim == L"")
-					{
-						node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + +L"_P").c_str());
-					}
-					else
-					{
-						node->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + +L"_P").c_str());
-					}
-					countParts++;
+					count++;
 				}
 			}
 		}
 	}
+	return count;
+}
+
+BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int ParentNodeIndex, INode * ParentNode, INode * ParentBone, INode* ParentPart, std::wstring nameAnim = L"")
+{
+
+	INode* LastPartNode;
+
+	std::vector<INode*> *Nodes = new std::vector<INode*>();
 	enum
 	{
 		BONE_WIDTH,
@@ -804,243 +1005,383 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 		BONE_TAPER,
 		BONE_LENGTH,
 	};
-	
+	if (CurrNode == -15)
+	{
+		INode* node;
+		Object* object;
+		object = new  DummyObject();
+		node = riff->gi->CreateObjectNode(object);
+		if (!node) {
+			delete object;
+			return FALSE;
+		}
+		if (ParentNode != NULL)
+		{
+			ParentNode->AttachChild(node);
+		}
+		nameAnim = SetAnim(riff, node, CurrNode);
+		node->SetNodeTM(0, CalcTransform(riff, CurrNode));
+		OneNode = node;
+		ParentNode = node;
+		OneNode->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D").c_str());
+	}
+
 	while (CurrNode >= 0)
 	{
+		Nodes->clear();
+		OneNode = NULL;
+		LastPartNode = NULL;
+		int countParts = 0;
+		//////////////////////////
+
 		
-		NodeIndex++;
-		if ((NodeIndex == 410) || (NodeIndex == 413))
+		for (int j = 0; j < riff->LODT->size(); j++)
 		{
-			int m = 0;
-		}
-		//if (countParts != 1)
-		{
-			INode *node;
-			Matrix3 tm;
-			Matrix3 tm1;
-			tm.IdentityMatrix();
-			int parent = CurrNode;
-
-			SAMAP amap = riff->AMAP->at(riff->SCEN->at(parent).amap_offset / 8);
-			STRAN tran = riff->TRAN->at(amap.matrix);
-
-			tm.IdentityMatrix();
-			tm = AddTM(tran, tm);
-			parent = riff->SCEN->at(parent).parent;
-			while (parent != -1)
-			{		
-				SAMAP amap = riff->AMAP->at(riff->SCEN->at(parent).amap_offset / 8);
-				STRAN tran = riff->TRAN->at(amap.matrix);
-				tm = AddTM(tran, tm);
-				parent = riff->SCEN->at(parent).parent;				
-			};
-			tm = tm * tmO;
-
-
-
-			if (riff->SGBR->at(CurrNode).bone_index >= 0)
+			for (int i = 0; i < riff->LODT->at(j).PART->size(); i++)
 			{
-				Object*  object;
-				//Object* object;
-				object = (Object*)riff->gi->CreateInstance(GEOMOBJECT_CLASS_ID, BONE_OBJ_CLASSID);
-				//object->GetParamBlock()->SetValue()
-				float LengthParent = 0.5;
-				if (riff->SGBR->at(ParentNodeIndex).bone_index >= 0)
+				SPART *part = &riff->LODT->at(j).PART->at(i);
+
+				if (part->type == 1)
 				{
-					if ((riff->SGBR->at(ParentNodeIndex).bone_index == 0) ||
-						(riff->SGBR->at(ParentNodeIndex).bone_index == 1))
+					if (part->scenegraph_reference == CurrNode)
 					{
-						int m = 0;
+
+						countParts++;
+						
+						INode* NodePart = DrawPart(riff, part, j, i, nameAnim, CurrNode);
+						Nodes->push_back(NodePart);
+						//nameAnim = SetAnim(riff, NodePart, CurrNode);
+						//NodePart->SetNodeTM(0, CalcTransform(riff, CurrNode));
+						if (riff->SGVL->at(CurrNode).vis_index >= 0)
+						{
+							std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.end());
+							std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
+							NodePart->SetUserPropBuffer(XMLVis.c_str());
+							if (nameAnim == L"")
+							{
+								nameAnim = NameVis;
+							}
+							NodePart->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_P").c_str());
+						}
+						if (ParentNode != NULL)
+						{
+							ParentNode->AttachChild(NodePart);
+						}
+						OneNode = NodePart;
+						LastPartNode = NodePart;
 					}
-					//Matrix3 parentTM = ParentNode->GetNodeTM(0);
-					//Matrix3 tmt = tm - parentTM;
-					SAMAP amap = riff->AMAP->at(riff->SCEN->at(CurrNode).amap_offset / 8);
-					STRAN tran = riff->TRAN->at(amap.matrix);
-					Matrix3 tmt;
-					tmt.IdentityMatrix();
-					tmt = AddTM(tran, tmt);
-					Point3 VecLength = tmt.GetTrans();
-					LengthParent = VecLength.FLength();
-					Interval* interval = new Interval(0,0);
-					float* LengthC = new float(0.0);
-					MaxSDK::AssetManagement::AssetUser* au = new MaxSDK::AssetManagement::AssetUser();
-					ParentNode->GetObjectRef()->GetParamBlock(boneobj_params)->GetValue(boneobj_length, TimeValue(0), *LengthC, *interval);
-					if (*LengthC < LengthParent)
+				}
+			}
+		}
+		int attoi = -1;
+		for (int ap = 0; ap < riff->REFP->size(); ap++)
+		{
+
+			if (riff->REFP->at(ap).scenegraph_reference == CurrNode)
+			{
+				NodeIndex++;
+				countParts++;
+				attoi = 0;
+				for (attoi = 0; attoi < riff->ATTO->size(); attoi++)
+				{
+					if (!std::strcmp(riff->ATTO->at(attoi).attachPoint.c_str(), riff->REFP->at(ap).name.c_str()))
 					{
-						ParentNode->GetObjectRef()->GetParamBlock(boneobj_params)->SetValue(boneobj_width, 0, LengthParent / 2);
-						ParentNode->GetObjectRef()->GetParamBlock(boneobj_params)->SetValue(boneobj_height, 0, LengthParent / 2);
-						ParentNode->GetObjectRef()->GetParamBlock(boneobj_params)->SetValue(boneobj_length, 0, LengthParent);
+						break;
 					}
-					delete LengthC;
 				}
-				object->GetParamBlock(boneobj_params)->SetValue(boneobj_width, 0, LengthParent/2);
-				object->GetParamBlock(boneobj_params)->SetValue(boneobj_height, 0, LengthParent/2);
-				object->GetParamBlock(boneobj_params)->SetValue(boneobj_length, 0, LengthParent);
-				node = riff->gi->CreateObjectNode(object);
-				if (CurrNode == 183)
+				NodeIndex++;
+				INode *node;
+				std::wstring NameFX = std::wstring(riff->ATTO->at(attoi).fxName.begin(), riff->ATTO->at(attoi).fxName.end());
+				std::wstring EffectFile = EffectPath + NameFX + L".fx";
+				std::string EffectFileA = EffectPathA + riff->ATTO->at(attoi).fxName + ".fx";
+				if (GetPrivateProfileInt(L"Particle.0", L"Type", 0, EffectFile.c_str()) == 28)
 				{
-					int m = 0;
+					LPSTR scaleS = new char[64];
+					GetPrivateProfileStringA("Particle.0", "X Scale", "1.0 ,1.0", scaleS, 64, EffectFileA.c_str());
+					std::vector<float> scalesX = GetArrFromString(scaleS);
+					GetPrivateProfileStringA("ParticleAttributes.0", "Color End", "255, 255, 255, 80", scaleS, 64, EffectFileA.c_str());
+					std::vector<float> ColorI = GetArrFromString(scaleS);
+					GetPrivateProfileStringA("ParticleAttributes.0", "Inner Cone Angle", "1.0", scaleS, 64, EffectFileA.c_str());
+					std::vector<float> ICA = GetArrFromString(scaleS);
+					GetPrivateProfileStringA("ParticleAttributes.0", "Outer Cone Angle", "45.0", scaleS, 64, EffectFileA.c_str());
+					std::vector<float> OCA = GetArrFromString(scaleS);
+
+					GenLight *gl = (GenLight *)CreateInstance(LIGHT_CLASS_ID, Class_ID(SPOT_LIGHT_CLASS_ID, 0));
+					gl->SetHotspot(0, ICA[0]);
+					gl->SetFallsize(0, OCA[0]);
+					gl->SetRGBColor(0, Point3(ColorI[0] / 255, ColorI[1] / 255, ColorI[2] / 255));
+					gl->SetIntensity(0, ColorI[3] * scalesX[0] / 1000.0);
+					gl->SetConeDisplay(TRUE);
+					gl->SetShadow(FALSE);
+					gl->SetUseLight(1);
+
+					INode *nodegl = riff->gi->CreateObjectNode(gl);
+					//nodegl->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+					nodegl->SetWireColor(RGB(ColorI[0], ColorI[1], ColorI[2]));
+
+					GenSphere *gs = (GenSphere *)CreateInstance(GEOMOBJECT_CLASS_ID, Class_ID(SPHERE_CLASS_ID, 0));
+					gs->SetParams(0.0001, 4, TRUE, FALSE, 0.0, FALSE, FALSE);
+					node = riff->gi->CreateObjectNode(gs);
+					node->SetRenderable(FALSE);
+
+					//nameAnim = SetAnim(riff, node, CurrNode);
+					//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+					Matrix3 tm;
+					tm.IdentityMatrix();
+					tm.RotateX(deg2rad(90.0));
+					nodegl->SetNodeTM(0, tm);
+					node->AttachChild(nodegl);
 				}
-				while (Bones->size() <= riff->SGBR->at(CurrNode).bone_index)
+				else
 				{
-					Bones->push_back(NULL);
-				}
-				Bones->at(riff->SGBR->at(CurrNode).bone_index) = node;
-				if (!node) {
-					delete object;
-					return FALSE;
+					GenSphere *gs = (GenSphere *)CreateInstance(GEOMOBJECT_CLASS_ID, Class_ID(SPHERE_CLASS_ID, 0));
+					gs->SetParams(0.5, 4, TRUE, FALSE, 0.0, FALSE, FALSE);
+					node = riff->gi->CreateObjectNode(gs);
+					node->SetRenderable(FALSE);
+					//nameAnim = SetAnim(riff, node, CurrNode);
+					//Matrix3 tm;
+					//tm.IdentityMatrix();
+					//tm.RotateX(deg2rad(-90.0));
+					//node->SetNodeTM(0, tm);
+					//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+					//tm.RotateX(deg2rad(-90.0));
 				}
 
+				if (ParentNode != NULL)
+				{
+					ParentNode->AttachChild(node);
+				}
+				if (ParentPart != NULL)
+				{
+					ParentPart->AttachChild(node);
+				}
+				Nodes->push_back(node);
+
+
+				//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+
+				node->SetWireColor(RGB(246, 7, 255));
+				OneNode = node;
+				std::wstring NameAtach = std::wstring(riff->ATTO->at(attoi).attachPoint.begin(), riff->ATTO->at(attoi).attachPoint.end());
+				std::wstring ParamAttach = std::wstring(riff->ATTO->at(attoi).params.begin(), riff->ATTO->at(attoi).params.end());
+				//node->SetName(std::wstring(NameAtach + L"_" + std::to_wstring(NodeIndex) +L"_"+ std::to_wstring(ParentNodeIndex) +L"_A").c_str());
+				node->SetName(NameAtach.c_str());
+				if (attoi != riff->ATTO->size())
+				{
+					std::wstring XMLAttach = StartUD + L"<Attachpoint name = \"" + NameAtach + L"\"> <AttachedObject> <Effect effectName=\"" + NameFX + L"\" effectParams=\"" + ParamAttach + L"\"/> </AttachedObject> </Attachpoint>" + EndUD;
+					node->SetUserPropBuffer(XMLAttach.c_str());
+				}
+			}
+		}
+
+		bool FlagPart = true;
+		Matrix3 tmP;
+		INode *node;
+		BoneNode = NULL;
+		if (riff->SGBR->at(CurrNode).bone_index >= 0)
+		{
+			NodeIndex++;
+			node = CreateBone(riff, CurrNode, ParentNodeIndex, ParentBone);
+			nameAnim = SetAnim(riff, node, CurrNode);
+			node->SetNodeTM(0, CalcTransform(riff, CurrNode));
+			if (ParentBone != NULL)
+			{
+				ParentBone->AttachChild(node);
+			}
+			else if (ParentNode != NULL)
+			{
+				ParentNode->AttachChild(node);
+			}
+			for (int i = 0; i < Nodes->size(); i++)
+			{
+				node->AttachChild(Nodes->at(i));
+				//nameAnim = SetAnim(riff, Nodes->at(i), CurrNode);
+				MSTR str;
+				Nodes->at(i)->GetUserPropBuffer(str);
+				std::wstring sstr = std::wstring(str);
+				int find = sstr.find(L"Attachpoint");
+				if(find>0)
+				{
+					Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode,1));
+				}
+				else
+				{
+					Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+				}
+			}
+			node->SetWireColor(RGB(255, 255, 255));
+			if (riff->SGBN->at(CurrNode).bone_name == "")
+			{
+				node->SetName(std::wstring(L"Bone_NN_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode)).c_str());
 			}
 			else
 			{
-				Object* object;
-				object = new  DummyObject();
-				node = riff->gi->CreateObjectNode(object);
-				if (!node) {
-					delete object;
-					return FALSE;
-				}
+				std::wstring BoneName = std::wstring(riff->SGBN->at(CurrNode).bone_name.begin(), riff->SGBN->at(CurrNode).bone_name.end());
+				node->SetName(std::wstring(BoneName).c_str());// +L"_" + std::to_wstring(CurrNode)).c_str());
 			}
-			//TriObject *object = CreateNewTriObject();
+			OneNode = node;
+			BoneNode = node;
+		}
+		else if (countParts != 1)
+		{
+			NodeIndex++;
+			Object* object;
+			object = new  DummyObject();
+			node = riff->gi->CreateObjectNode(object);
+			if (!node) {
+				delete object;
+				return FALSE;
+			}
 			
-			
-			Control* c;
-			c = node->GetTMController()->GetPositionController();
-			if (c && c->ClassID() != Class_ID(LININTERP_POSITION_CLASS_ID, 0)) {
-				Control *tcb = (Control*)riff->gi->CreateInstance(
-					CTRL_POSITION_CLASS_ID,
-					Class_ID(LININTERP_POSITION_CLASS_ID, 0));
-				if (!node->GetTMController()->SetPositionController(tcb)) {
-					tcb->DeleteThis();
-				}
-			}
-
-			c = node->GetTMController()->GetRotationController();
-			if (c && c->ClassID() != Class_ID(LININTERP_ROTATION_CLASS_ID, 0)) {
-				Control *tcb = (Control*)riff->gi->CreateInstance(
-					CTRL_ROTATION_CLASS_ID,
-					Class_ID(LININTERP_ROTATION_CLASS_ID, 0));
-				if (!node->GetTMController()->SetRotationController(tcb)) {
-					tcb->DeleteThis();
-				}
-			}
 			if (ParentNode != NULL)
 			{
 				ParentNode->AttachChild(node);
 			}
-			
-			
-			int xanimInd = riff->SGAL->at(riff->SCEN->at(CurrNode).amap_offset / 8).xanim;
-			if (xanimInd >= 0)
+			nameAnim = SetAnim(riff, node, CurrNode);
+			node->SetNodeTM(0, CalcTransform(riff, CurrNode));
+			for (int i = 0; i < Nodes->size(); i++)
 			{
-				for (int i = 0; i < riff->XANI->size(); i++)
+				
+				//nameAnim = SetAnim(riff, Nodes->at(i), CurrNode);
+				node->AttachChild(Nodes->at(i));
+				MSTR str;
+				Nodes->at(i)->GetUserPropBuffer(str);
+				std::wstring sstr = std::wstring(str);
+				int find = sstr.find(L"Attachpoint");
+				if (find>0)
 				{
-					for (int j = 0; j < riff->XANI->at(i).XANS->size(); j++)
-					{
-						SXANS xans = riff->XANI->at(i).XANS->at(j);
-						if (xanimInd == riff->XANI->at(i).XANS->at(j).animation_ID)
-						{
-							nameAnim = L"NA";
-							if (node->GetTMController())
-							{
-								SuspendAnimate();
-								AnimateOn();
-								std::string ss = BytesToGUID(riff->XANI->at(i).guid);
-								
-								for (int jj = 0; jj < riff->AnimationXML->size(); jj++)
-								{
-									if (std::strcmp(ss.c_str(), riff->AnimationXML->at(jj).guid.c_str()) == 0)
-									{
-										nameAnim = std::wstring(riff->AnimationXML->at(jj).name.begin(), riff->AnimationXML->at(jj).name.end());
-										break;
-									}
-								}
-								/////////////////////////////////////
-								Control *TControl = node->GetTMController();
-								DefNoteTrack* nt = new DefNoteTrack();
-								TControl->AddNoteTrack(nt);
-								nt->AddNewKey(0, 0);
-								nt->AddNewKey(0, 0);
-								NoteKeyTab keys;
-								keys.Init();
-								std::wstring anStart = L"ANIM_START = \"" + nameAnim + L"\"";
-								std::wstring anEnd = L"ANIM_END = \"" + nameAnim + L"\"";
-								NoteKey* nk = new NoteKey(0, anStart.c_str());
-								nk->time = 0;																
-								keys.Append(1, &nk);
-
-								nk = new NoteKey(0, anEnd.c_str());
-								
-								nk->time = riff->XANI->at(i).animation_length * GetTicksPerFrame();
-								keys.Append(1, &nk);
-								
-								nt->keys = keys;
-								////////////////////////////////////////
-												
-
-								for (int k = 0; k < xans.XANK->size(); k++)
-								{
-									if (xans.XANK->at(k).type == 4)
-									{
-										Control *rotControl = node->GetTMController()->GetRotationController();
-										if (rotControl)
-										{
-											SetControllerKeys(
-												rotControl,
-												&xans.XANK->at(k),
-												KEY_ROT,
-												xans.XANK->size(), k);
-
-										}
-
-									}
-									else
-									{
-										Control *posControl = node->GetTMController()->GetPositionController();
-										if (posControl)
-										{
-											SetControllerKeys(
-												posControl,
-												&xans.XANK->at(k),
-												KEY_POS,
-												xans.XANK->size(), k);
-										}
-									}
-								}
-							}
-						}
-						ResumeAnimate();
-					}
+					Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
 				}
-
+				else
+				{	
+					Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+				}
 			}
-			
-			node->SetNodeTM(0, tm);
-			//node->ResetTransform(0, FALSE);
 			OneNode = node;
+			if (riff->SGVL->at(CurrNode).vis_index >= 0)
+			{
+				std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.end());
+				std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
+				OneNode->SetUserPropBuffer(XMLVis.c_str());
+				if (nameAnim == L"")
+				{
+					nameAnim = NameVis;
+				}
+				OneNode->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D").c_str());
+			}
 			if (nameAnim == L"")
 			{
-				node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_D").c_str());
+				OneNode->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D").c_str());
 			}
 			else
 			{
-				node->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_D").c_str());
+				OneNode->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D").c_str());
 			}
-			if (NodeIndex == 0)
+			if (riff->SGBR->at(CurrNode).bone_index >= 0)
 			{
-				rootNode = node;
+				
 			}
-			
 		}
-		CreateNode(riff, scenes, scenes->at(CurrNode).child_node_index, CurrNode, OneNode, nameAnim);
+		else
+		{
+			nameAnim = SetAnim(riff, OneNode, CurrNode);
+			MSTR str;
+			OneNode->GetUserPropBuffer(str);
+			std::wstring sstr = std::wstring(str);
+			int find = sstr.find(L"Attachpoint");
+			if (find>0)
+			{
+				OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+			}
+			else
+			{
+				OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+			}
+			//OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode));
+		}
+
+
+		
+		if (NodeIndex == 0)
+		{
+			rootNode = OneNode;
+		}
+		CreateNode(riff, scenes, scenes->at(CurrNode).child_node_index, CurrNode, OneNode, BoneNode, LastPartNode, nameAnim);
 		CurrNode = scenes->at(CurrNode).peer_node_index;
 	}
+	
+
+
+	//ParentNode->SetNodeTM(0, tmO);
+
+
+	/*if (countParts == 1)
+	{
+
+		ParentNode = PartNode;
+		OneNode = PartNode;
+	}*/
+
+
+
+	
+
+
+
 	//rootNode->SetNodeTM(0, tmR);
 	//rootNode->ResetPivot(0);
 	//rootNode->ResetTransform(0, TRUE);
 	return true;
-	
+
+}
+
+enum NodeType
+{
+	DUMMY,
+	BONE,
+	ATTACH,
+	PART
+
+};
+struct SNode
+{
+	NodeType Type;
+	std::vector<int>* parts;
+};
+struct SHierarchy
+{
+	std::vector<SNode>* Nodes;
+};
+std::vector<SHierarchy>* Hierarchy;
+
+void CreateHierarchy(RIFF* riff, int CurrNode)
+{
+	if (Hierarchy == NULL)
+	{
+		Hierarchy = new std::vector<SHierarchy>();
+	}
+	while (CurrNode >= 0)
+	{
+		int count = 0;
+		for (int j = 0; j < riff->LODT->size(); j++)
+		{
+			for (int i = 0; i < riff->LODT->at(j).PART->size(); i++)
+			{
+				SPART *part = &riff->LODT->at(j).PART->at(i);
+
+				if (part->type == 1)
+				{
+					if (part->scenegraph_reference == CurrNode)
+					{
+						count++;
+
+					}
+				}
+			}
+		}
+		CreateHierarchy(riff, riff->SCEN->at(CurrNode).child_node_index);
+		CurrNode = riff->SCEN->at(CurrNode).peer_node_index;
+	}
 }
 
 BOOL SetSkin(RIFF* riff)
@@ -1243,8 +1584,9 @@ int MDLConverterv2::DoImport(const TCHAR * filename, ImpInterface * i, Interface
 {
 	#pragma message(TODO("Implement the actual file import here and"))	
 	RIFF * PRIFF = new RIFF(filename, i, gi);
+	tmO.RotateX(deg2rad(90.0));
 	CreateMtlLib(PRIFF, PRIFF->MAT3, PRIFF->EMT1, filename);
-	CreateNode(PRIFF, PRIFF->SCEN, 0, -1, NULL);
+	CreateNode(PRIFF, PRIFF->SCEN, 0, -1, NULL, NULL, NULL);
 	SetSkin(PRIFF);
 	/*for (int i = 0; i < PRIFF->LODT->at(0).PART->size(); i++)
 	{

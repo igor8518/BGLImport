@@ -30,6 +30,7 @@
 #include <math.h>
 #include <stdmat.h>
 #include "P3DMaterial.h"
+#include <cctype>
 //SIMPLE TYPE
 
 
