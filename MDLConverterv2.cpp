@@ -255,19 +255,11 @@ void SetControllerKeys(Control *cont, SXANK *keys, int type, int ctt, int ct)
 INode* OneNode = NULL;
 INode* BoneNode = NULL;
 ////////////////////////
-Matrix3 tmO = Matrix3(
-	Point3(1, 0, 0),
-	Point3(0, 1, 0),
-	Point3(0, 0, 1),
-	Point3(0, 0, 0)
-);
+Matrix3 tmO = Matrix3(1);
 
-Matrix3 tmR = Matrix3(
-	Point3(1, 0, 0),
-	Point3(0, 1, 0),
-	Point3(0, 0, 1),
-	Point3(0, 0, 0)
-);
+
+Matrix3 tmR = Matrix3(1);
+
 
 struct SParts
 {
@@ -426,7 +418,7 @@ std::wstring SetAnim(RIFF *riff, INode* node, int CurrNode)
 	return nameAnim;
 }
 
-INode* DrawPart(RIFF* riff, SPART* part, int LOD, int PartNo, std::wstring nameAnim, int nodeIndex)
+INode* DrawPart(RIFF* riff, SPART* part, int LOD, int PartNo, std::wstring nameAnim, int nodeIndex, std::wstring LODStr)
 {
 	
 	NodeIndex++;
@@ -647,16 +639,16 @@ INode* DrawPart(RIFF* riff, SPART* part, int LOD, int PartNo, std::wstring nameA
 			std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(nodeIndex).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(nodeIndex).vis_index).name.end());
 			std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
 			node->SetUserPropBuffer(XMLVis.c_str());
-			node->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+			node->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P" + LODStr).c_str());
 		}
 		else
 		{
-			node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+			node->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P" +  LODStr).c_str());
 		}
 	}
 	else
 	{
-		node->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P").c_str());
+		node->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(nodeIndex) + L"_P" +  LODStr).c_str());
 	}
 	return node;
 }
@@ -992,7 +984,7 @@ int CheckParts(RIFF* riff, int CurrNode)
 	return count;
 }
 
-BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int ParentNodeIndex, INode * ParentNode, INode * ParentBone, INode* ParentPart, std::wstring nameAnim = L"")
+BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int ParentNodeIndex, INode * ParentNode, INode * ParentBone, INode* ParentPart, int LOD, std::wstring nameAnim = L"")
 {
 
 	INode* LastPartNode;
@@ -1034,45 +1026,49 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 		int countParts = 0;
 		//////////////////////////
 
-		
-		for (int j = 0; j < riff->LODT->size(); j++)
+		std::wstring LODStr = L"";
+		//for (int j = LOD; j < riff->LODT->size(); j++)
+		//{
+		LODStr = std::wstring(L"_" + std::to_wstring(riff->LODT->at(LOD).LOD));
+
+		for (int i = 0; i < riff->LODT->at(LOD).PART->size(); i++)
 		{
-			for (int i = 0; i < riff->LODT->at(j).PART->size(); i++)
+			SPART *part = &riff->LODT->at(LOD).PART->at(i);
+
+			if (part->type == 1)
 			{
-				SPART *part = &riff->LODT->at(j).PART->at(i);
-
-				if (part->type == 1)
+				if (part->scenegraph_reference == CurrNode)
 				{
-					if (part->scenegraph_reference == CurrNode)
-					{
 
-						countParts++;
-						
-						INode* NodePart = DrawPart(riff, part, j, i, nameAnim, CurrNode);
-						Nodes->push_back(NodePart);
-						//nameAnim = SetAnim(riff, NodePart, CurrNode);
-						//NodePart->SetNodeTM(0, CalcTransform(riff, CurrNode));
-						if (riff->SGVL->at(CurrNode).vis_index >= 0)
+
+
+					countParts++;
+
+					INode* NodePart = DrawPart(riff, part, LOD, i, nameAnim, CurrNode, LODStr);
+					Nodes->push_back(NodePart);
+					//nameAnim = SetAnim(riff, NodePart, CurrNode);
+					//NodePart->SetNodeTM(0, CalcTransform(riff, CurrNode));
+					if (riff->SGVL->at(CurrNode).vis_index >= 0)
+					{
+						std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.end());
+						std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
+						NodePart->SetUserPropBuffer(XMLVis.c_str());
+						if (nameAnim == L"")
 						{
-							std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.end());
-							std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
-							NodePart->SetUserPropBuffer(XMLVis.c_str());
-							if (nameAnim == L"")
-							{
-								nameAnim = NameVis;
-							}
-							NodePart->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_P").c_str());
+							nameAnim = NameVis;
 						}
-						if (ParentNode != NULL)
-						{
-							ParentNode->AttachChild(NodePart);
-						}
-						OneNode = NodePart;
-						LastPartNode = NodePart;
+						NodePart->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_P" + LODStr).c_str());
 					}
+					if (ParentNode != NULL)
+					{
+						ParentNode->AttachChild(NodePart);
+					}
+					OneNode = NodePart;
+					LastPartNode = NodePart;
 				}
 			}
 		}
+		//}
 		int attoi = -1;
 		for (int ap = 0; ap < riff->REFP->size(); ap++)
 		{
@@ -1157,12 +1153,12 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 				}
 				Nodes->push_back(node);
 
-
+				
 				//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
 
 				node->SetWireColor(RGB(246, 7, 255));
 				OneNode = node;
-				std::wstring NameAtach = std::wstring(riff->ATTO->at(attoi).attachPoint.begin(), riff->ATTO->at(attoi).attachPoint.end());
+				std::wstring NameAtach = std::wstring(riff->ATTO->at(attoi).attachPoint.begin(), riff->ATTO->at(attoi).attachPoint.end()) + LODStr;
 				std::wstring ParamAttach = std::wstring(riff->ATTO->at(attoi).params.begin(), riff->ATTO->at(attoi).params.end());
 				//node->SetName(std::wstring(NameAtach + L"_" + std::to_wstring(NodeIndex) +L"_"+ std::to_wstring(ParentNodeIndex) +L"_A").c_str());
 				node->SetName(NameAtach.c_str());
@@ -1221,65 +1217,65 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 			}
 			OneNode = node;
 			BoneNode = node;
-		}
+		}		
 		else if (countParts != 1)
 		{
-			NodeIndex++;
-			Object* object;
-			object = new  DummyObject();
-			node = riff->gi->CreateObjectNode(object);
-			if (!node) {
-				delete object;
-				return FALSE;
-			}
-			
-			if (ParentNode != NULL)
-			{
-				ParentNode->AttachChild(node);
-			}
-			nameAnim = SetAnim(riff, node, CurrNode);
-			node->SetNodeTM(0, CalcTransform(riff, CurrNode));
-			for (int i = 0; i < Nodes->size(); i++)
-			{
-				
-				//nameAnim = SetAnim(riff, Nodes->at(i), CurrNode);
-				node->AttachChild(Nodes->at(i));
-				MSTR str;
-				Nodes->at(i)->GetUserPropBuffer(str);
-				std::wstring sstr = std::wstring(str);
-				int find = sstr.find(L"Attachpoint");
-				if (find>0)
+				NodeIndex++;
+				Object* object;
+				object = new  DummyObject();
+				node = riff->gi->CreateObjectNode(object);
+				if (!node) {
+					delete object;
+					return FALSE;
+				}
+
+				if (ParentNode != NULL)
 				{
-					Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+					ParentNode->AttachChild(node);
 				}
-				else
-				{	
-					Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+				nameAnim = SetAnim(riff, node, CurrNode);
+				node->SetNodeTM(0, CalcTransform(riff, CurrNode));
+				for (int i = 0; i < Nodes->size(); i++)
+				{
+
+					//nameAnim = SetAnim(riff, Nodes->at(i), CurrNode);
+					node->AttachChild(Nodes->at(i));
+					MSTR str;
+					Nodes->at(i)->GetUserPropBuffer(str);
+					std::wstring sstr = std::wstring(str);
+					int find = sstr.find(L"Attachpoint");
+					if (find>0)
+					{
+						Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+					}
+					else
+					{
+						Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+					}
 				}
-			}
-			OneNode = node;
-			if (riff->SGVL->at(CurrNode).vis_index >= 0)
-			{
-				std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.end());
-				std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
-				OneNode->SetUserPropBuffer(XMLVis.c_str());
+				OneNode = node;
+				if (riff->SGVL->at(CurrNode).vis_index >= 0)
+				{
+					std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.end());
+					std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
+					OneNode->SetUserPropBuffer(XMLVis.c_str());
+					if (nameAnim == L"")
+					{
+						nameAnim = NameVis;
+					}
+					OneNode->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
+				}
 				if (nameAnim == L"")
 				{
-					nameAnim = NameVis;
+					OneNode->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
 				}
-				OneNode->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D").c_str());
-			}
-			if (nameAnim == L"")
-			{
-				OneNode->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D").c_str());
-			}
-			else
-			{
-				OneNode->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D").c_str());
-			}
-			if (riff->SGBR->at(CurrNode).bone_index >= 0)
-			{
-				
+				else
+				{
+					OneNode->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
+				}
+				if (riff->SGBR->at(CurrNode).bone_index >= 0)
+				{
+
 			}
 		}
 		else
@@ -1301,14 +1297,14 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 		}
 
 
-		
+
 		if (NodeIndex == 0)
 		{
 			rootNode = OneNode;
-		}
-		CreateNode(riff, scenes, scenes->at(CurrNode).child_node_index, CurrNode, OneNode, BoneNode, LastPartNode, nameAnim);
-		CurrNode = scenes->at(CurrNode).peer_node_index;
-	}
+		}		
+		CreateNode(riff, scenes, scenes->at(CurrNode).child_node_index, CurrNode, OneNode, BoneNode, LastPartNode, LOD, nameAnim);		
+		CurrNode = scenes->at(CurrNode).peer_node_index;		
+		}	
 	
 
 
@@ -1586,7 +1582,44 @@ int MDLConverterv2::DoImport(const TCHAR * filename, ImpInterface * i, Interface
 	RIFF * PRIFF = new RIFF(filename, i, gi);
 	tmO.RotateX(deg2rad(90.0));
 	CreateMtlLib(PRIFF, PRIFF->MAT3, PRIFF->EMT1, filename);
-	CreateNode(PRIFF, PRIFF->SCEN, 0, -1, NULL, NULL, NULL);
+
+	INode* nodeSR;
+	Object* objectSR;
+	objectSR = new  DummyObject();
+	nodeSR = PRIFF->gi->CreateObjectNode(objectSR);
+	//nodeExt->SetName((std::wstring(PRIFF->MDLN.begin(), PRIFF->MDLN.end()) + L"_Exterior").c_str());
+	nodeSR->SetName(L"Scene Root");
+	if (!nodeSR) {
+		delete objectSR;
+		return FALSE;
+	}
+	INode* nodeExt;
+	Object* objectExt;
+	objectExt = new  DummyObject();
+	nodeExt = PRIFF->gi->CreateObjectNode(objectExt);
+	nodeExt->SetName((std::wstring(PRIFF->MDLN.begin(), PRIFF->MDLN.end()) + L"_Exterior").c_str());
+	//nodeExt->SetName(L"Scene Root");
+	nodeSR->AttachChild(nodeExt);
+	if (!nodeExt) {
+		delete objectExt;
+		return FALSE;
+	}
+	for (int j = 0; j < PRIFF->LODT->size(); j++)
+	{
+		INode* nodeLOD;
+		Object* objectLOD;
+		objectLOD = new  DummyObject();
+		nodeLOD = PRIFF->gi->CreateObjectNode(objectLOD);
+		nodeLOD->SetName((std::wstring(PRIFF->MDLN.begin(), PRIFF->MDLN.end()) + L"_LOD_" + std::to_wstring(PRIFF->LODT->at(j).LOD)).c_str());
+		//nodeExt->SetName(L"Scene Root");
+		nodeExt->AttachChild(nodeLOD);
+		if (!nodeLOD) {
+			delete objectLOD;
+			return FALSE;
+		}
+		//LODStr = std::wstring(L"_LOD_" + std::to_wstring(riff->LODT->at(LOD).LOD));
+		CreateNode(PRIFF, PRIFF->SCEN, 0, 0, nodeLOD, NULL, NULL, j);
+	}
 	SetSkin(PRIFF);
 	/*for (int i = 0; i < PRIFF->LODT->at(0).PART->size(); i++)
 	{

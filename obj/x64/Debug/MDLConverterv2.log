@@ -1,69 +1,56 @@
-﻿  RIFF.cpp
+﻿  MDLConverterv2.cpp
 c:\users\igor8\source\repos\mdlconverterv2\riff.h(37): warning C4315: SParameter: указатель "this" для члена "SParameter::Code" не может быть выровнен 8 как требуется для конструктора
 c:\users\igor8\source\repos\mdlconverterv2\riff.h(394): warning C4315: SVISI: указатель "this" для члена "SVISI::Code" не может быть выровнен 8 как требуется для конструктора
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(25): warning C4189: sw: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(18): warning C4189: count: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(221): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(225): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(226): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(293): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(297): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(298): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(376): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(380): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(388): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(215): warning C4100: NamePar: неиспользованный формальный параметр
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(215): warning C4100: maxCount: неиспользованный формальный параметр
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(217): warning C4189: ev: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(495): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(497): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(498): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(505): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(507): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(508): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(515): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(517): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(519): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(535): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(539): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(540): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(551): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(553): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(554): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(555): warning C4238: нестандартное расширение: использование правостороннего значения класса в качестве левостороннего значения
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(537): warning C4101: str: неиспользованная локальная переменная
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(599): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(611): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(624): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(638): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(659): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(682): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(704): warning C4101: xpeer: неиспользованная локальная переменная
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(704): warning C4101: xthismatrix: неиспользованная локальная переменная
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(704): warning C4101: xparent: неиспользованная локальная переменная
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(704): warning C4101: xchild: неиспользованная локальная переменная
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(697): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(729): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(743): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(757): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(771): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(873): warning C4189: temp: локальная переменная инициализирована, но не использована
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): warning C4315: SAnimation: указатель "this" для члена "SAnimation::typeParam" не может быть выровнен 8 как требуется для конструктора
-  c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): note: Сообщение диагностики возникло в созданной компилятором функции "SAnimation::SAnimation(const SAnimation &)"
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): warning C4315: SATTO: указатель "this" для члена "SATTO::fxName" не может быть выровнен 8 как требуется для конструктора
-  c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): note: Сообщение диагностики возникло в созданной компилятором функции "SATTO::SATTO(const SATTO &)"
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): warning C4315: SATTO: указатель "this" для члена "SATTO::params" не может быть выровнен 8 как требуется для конструктора
-  c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): note: Сообщение диагностики возникло в созданной компилятором функции "SATTO::SATTO(const SATTO &)"
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): warning C4315: SATTO: указатель "this" для члена "SATTO::attachPoint" не может быть выровнен 8 как требуется для конструктора
-  c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): note: Сообщение диагностики возникло в созданной компилятором функции "SATTO::SATTO(const SATTO &)"
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): warning C4315: SREFP: указатель "this" для члена "SREFP::name" не может быть выровнен 8 как требуется для конструктора
-  c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): note: Сообщение диагностики возникло в созданной компилятором функции "SREFP::SREFP(const SREFP &)"
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): warning C4315: SVISI: указатель "this" для члена "SVISI::name" не может быть выровнен 8 как требуется для конструктора
-  c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): note: Сообщение диагностики возникло в созданной компилятором функции "SVISI::SVISI(const SVISI &)"
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): warning C4315: SVISI: указатель "this" для члена "SVISI::Code" не может быть выровнен 8 как требуется для конструктора
-  c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): note: Сообщение диагностики возникло в созданной компилятором функции "SVISI::SVISI(const SVISI &)"
-c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): warning C4315: SParameter: указатель "this" для члена "SParameter::Code" не может быть выровнен 8 как требуется для конструктора
-  c:\users\igor8\source\repos\mdlconverterv2\riff.cpp(1432): note: Сообщение диагностики возникло в созданной компилятором функции "SParameter::SParameter(const SParameter &)"
+c:\users\igor8\source\repos\mdlconverterv2\p3dmaterial.h(356): warning C4265: P3DMaterial: в классе есть виртуальные функции, но деструктор не является виртуальным
+           экземпляры класса могут не быть корректно уничтожены
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(97): TODO: Returns the number of file name extensions supported by the plug-in.
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(103): TODO: Return the 'i-th' file name extension (i.e. "3DS").
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(109): TODO: Return long ASCII description (i.e. "Targa 2.0 Image File")
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(115): TODO: Return short ASCII description (i.e. "Targa")
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(121): TODO: Return ASCII Author name
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(127): TODO: Return ASCII Copyright message
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(145): TODO: Return Version number * 100 (i.e. v3.01 = 301)
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(393): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(407): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(546): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(549): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(550): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(722): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(723): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(755): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(939): warning C4189: au: локальная переменная инициализирована, но не использована
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(927): warning C4189: m: локальная переменная инициализирована, но не использована
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1015): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1015): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1108): warning C4239: нестандартное расширение: аргумент: преобразование "Point3" в "Point3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1108): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1182): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1182): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1198): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1201): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1201): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1205): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1205): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1237): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1237): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1246): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1249): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1249): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1253): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1253): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1287): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1290): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1290): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1294): warning C4239: нестандартное расширение: аргумент: преобразование "Matrix3" в "Matrix3 &"
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1294): note: Неконстантная ссылка может быть связана только с левосторонним значением
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1173): warning C4189: FlagPart: локальная переменная инициализирована, но не использована
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1429): warning C4800: BOOL: принудительно задано логическое значение "true" или "false" (предупреждение о производительности)
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1427): warning C4189: m: локальная переменная инициализирована, но не использована
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1432): warning C4189: m: локальная переменная инициализирована, но не использована
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1441): warning C4100: filename: неиспользованный формальный параметр
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1443): warning C4101: size: неиспользованная локальная переменная
+  c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1581): TODO: Implement the actual file import here and
+c:\users\igor8\source\repos\mdlconverterv2\mdlconverterv2.cpp(1579): warning C4100: suppressPrompts: неиспользованный формальный параметр
   LINK : не найден или не выполнена сборка I:\Program Files\Autodesk\3ds Max 2018\Plugins\MDLConverterv2.dli при последней инкрементной компоновке; выполняется полная компоновка
      Создается библиотека C:\Users\igor8\source\repos\MDLConverterv2\\obj\x64\Debug\\MDLConverterv2.lib и объект C:\Users\igor8\source\repos\MDLConverterv2\\obj\x64\Debug\\MDLConverterv2.exp
   MDLConverterv2.vcxproj -> I:\Program Files\Autodesk\3ds Max 2018\Plugins\MDLConverterv2.dli
