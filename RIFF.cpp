@@ -184,6 +184,7 @@ RIFF::RIFF(const TCHAR * filename, ImpInterface * i, Interface * gi)
 	SGBN = new std::vector<SSGBN>();
 	SGVL = new std::vector<SSGVL>();
 	VISI = new std::vector<SVISI>();
+	//XAPI = new std::vector<SXAPI>();
 	AMAP = new std::vector<SAMAP>();
 	XANI = new std::vector<SXANI>();
 	REFP = new std::vector<SREFP>();
@@ -1072,36 +1073,68 @@ HRESULT RIFF::ReadSection(int parent)
 	}
 	case (UINT('XAPS')):
 	{
-		SAnimationPart lVis;
-		SVISI lVISI;
+
+		SAnimationPart lAnim;
+		SXAPI lXAPI;
 		std::string str = "";
 		std::vector<char> lCode;
 		std::vector<std::string> Result;
 		str.resize(Temp.Size);
 		RIFFStream->Read(&str[0], Seek, Temp.Size);
 		Seek = Seek + Temp.Size;
+
 		Result = ConvertVisAnim(str, 4, 1, 1);
-		if (Result.size() > 0)
-		{
-			std::string name = "custom_anim_" + Result[0] + "_";
-		}
+
+
+		
+
+		
+			lXAPI.SimF = true;
+			lXAPI.Sim.Variable = Result[1];
+			lXAPI.Sim.Units = Result[2];
+			if (Result.size() == 4)
+			{
+				lXAPI.Sim.Bias = std::atof(Result[3].c_str());
+			}
+			if (Result.size() == 5)
+			{
+				lXAPI.LagF = true;
+				lXAPI.Lag = std::atof(Result[4].c_str());
+			}
+			lXAPI.name = Result[0];
+			CurrXANI->XAPI = lXAPI;
+			UniXAPI++;
+		
+
 		break;
 	}
 	case (UINT('XAPC')):
 	{
-		SAnimationPart lVis;
-		SVISI lVISI;
+		SAnimationPart lAnim;
+		SXAPI lXAPI;
 		std::string str = "";
 		std::vector<char> lCode;
 		std::vector<std::string> Result;
 		str.resize(Temp.Size);
 		RIFFStream->Read(&str[0], Seek, Temp.Size);
 		Seek = Seek + Temp.Size;
-		Result = ConvertVisAnim(str, 4, 1, 1);
-		if (Result.size() > 0)
-		{
-			std::string name = "custom_anim_" + Result[0] + "_";
-		}
+
+		Result = ConvertVisAnim(str, 2, 2, 1);
+
+
+		
+			lXAPI.CodeF = true;
+			lXAPI.Code = Result[1];
+			lXAPI.name = Result[0];
+			if (Result.size() == 3)
+			{
+				lXAPI.LagF = true;
+				lXAPI.Lag = std::atof(Result[2].c_str());
+			}
+			CurrXANI->XAPI = lXAPI;
+			UniXAPI++;
+		
+
 		break;
 	}
 	case (UINT('VINS')):
@@ -1222,8 +1255,8 @@ HRESULT RIFF::ReadSection(int parent)
 	case (UINT('XANI')):
 	{
 		SXANI lXANI;
-		RIFFStream->Read(&lXANI, Seek, sizeof(lXANI) - 16 - sizeof(SXAPS));
-		Seek = Seek + sizeof(lXANI) - 16 - sizeof(SXAPS);
+		RIFFStream->Read(&lXANI, Seek, sizeof(lXANI) - 16 - sizeof(SXAPI));
+		Seek = Seek + sizeof(lXANI) - 16 - sizeof(SXAPI);
 		lXANI.XANS = new std::vector<SXANS>();
 		std::string* lS = new std::string();
 		char s = ' ';
@@ -1237,6 +1270,12 @@ HRESULT RIFF::ReadSection(int parent)
 
 		}
 		lXANI.typeParam = lS;
+		/*for (int jj = 0; jj < AnimationXML->size(); jj++)
+		{
+			if (std::strcmp(strlwr((char*)ss.c_str()), strlwr((char*)AnimationXML->at(jj).guid.c_str())) == 0)
+			{
+			}
+		}*/
 		XANI->push_back(lXANI);
 		CurrXANI = &(XANI->at(XANI->size() - 1));
 		CurrXANI = &(XANI->at(XANI->size() - 1));

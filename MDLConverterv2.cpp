@@ -345,14 +345,18 @@ std::wstring SetAnim(RIFF *riff, INode* node, int CurrNode)
 							AnimateOn();
 							std::string ss = BytesToGUID(riff->XANI->at(i).guid);
 
-							for (int jj = 0; jj < riff->AnimationXML->size(); jj++)
+							/*for (int jj = 0; jj < riff->AnimationXML->size(); jj++)
 							{
 								if (std::strcmp(strlwr((char*)ss.c_str()), strlwr((char*)riff->AnimationXML->at(jj).guid.c_str())) == 0)
 								{
 									nameAnim = std::wstring(riff->AnimationXML->at(jj).name.begin(), riff->AnimationXML->at(jj).name.end());
 									break;
 								}
-							}
+							}*/
+							
+									nameAnim = std::wstring(riff->XANI->at(i).XAPI.name.begin(), riff->XANI->at(i).XAPI.name.end());
+							
+							
 							/////////////////////////////////////
 
 
@@ -983,7 +987,48 @@ int CheckParts(RIFF* riff, int CurrNode)
 	}
 	return count;
 }
+bool FindGraph(RIFF* riff, int CurrNode, /*INode* parentNode,*/ int findGraph, std::vector<int>* grafs)
+{
+	/*if (Hierarchy == NULL)
+	{
+	Hierarchy = new std::vector<SHierarchy>();
+	}
+	*/
+	int cn = CurrNode;
+	//INode* node = NULL;
+	bool fg = false;
+	if (cn == findGraph)
+	{
+		grafs->push_back(cn);
+		return true;
+	}
 
+	while (cn >= 0)
+	{
+
+		/*Object* object;
+		object = new  DummyObject();
+		node = riff->gi->CreateObjectNode(object);
+		node->SetName(std::wstring(L"SG_" + std::to_wstring(CurrNode)).c_str());
+		parentNode->AttachChild(node);*/
+
+		fg = FindGraph(riff, riff->SCEN->at(cn).child_node_index,/* node*/findGraph, grafs);
+		if (fg)
+		{
+			grafs->push_back(cn);
+			return true;
+		}
+		cn = riff->SCEN->at(cn).peer_node_index;
+		if (cn == findGraph)
+		{
+			grafs->push_back(cn);
+			return true;
+		}
+	}
+
+	return false;
+
+}
 BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int ParentNodeIndex, INode * ParentNode, INode * ParentBone, INode* ParentPart, int LOD, std::wstring nameAnim = L"")
 {
 
@@ -997,6 +1042,10 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 		BONE_TAPER,
 		BONE_LENGTH,
 	};
+	if (CurrNode == 40)
+	{
+		int m = 0;
+	}
 	if (CurrNode == -15)
 	{
 		INode* node;
@@ -1020,6 +1069,7 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 
 	while (CurrNode >= 0)
 	{
+		std::vector<int>* grafs = new std::vector<int>();
 		Nodes->clear();
 		OneNode = NULL;
 		LastPartNode = NULL;
@@ -1075,8 +1125,6 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 
 			if (riff->REFP->at(ap).scenegraph_reference == CurrNode)
 			{
-				NodeIndex++;
-				countParts++;
 				attoi = 0;
 				for (attoi = 0; attoi < riff->ATTO->size(); attoi++)
 				{
@@ -1085,87 +1133,91 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 						break;
 					}
 				}
-				NodeIndex++;
-				INode *node;
-				std::wstring NameFX = std::wstring(riff->ATTO->at(attoi).fxName.begin(), riff->ATTO->at(attoi).fxName.end());
-				std::wstring EffectFile = EffectPath + NameFX + L".fx";
-				std::string EffectFileA = EffectPathA + riff->ATTO->at(attoi).fxName + ".fx";
-				if (GetPrivateProfileInt(L"Particle.0", L"Type", 0, EffectFile.c_str()) == 28)
+				if (riff->ATTO->size() > 0)
 				{
-					LPSTR scaleS = new char[64];
-					GetPrivateProfileStringA("Particle.0", "X Scale", "1.0 ,1.0", scaleS, 64, EffectFileA.c_str());
-					std::vector<float> scalesX = GetArrFromString(scaleS);
-					GetPrivateProfileStringA("ParticleAttributes.0", "Color End", "255, 255, 255, 80", scaleS, 64, EffectFileA.c_str());
-					std::vector<float> ColorI = GetArrFromString(scaleS);
-					GetPrivateProfileStringA("ParticleAttributes.0", "Inner Cone Angle", "1.0", scaleS, 64, EffectFileA.c_str());
-					std::vector<float> ICA = GetArrFromString(scaleS);
-					GetPrivateProfileStringA("ParticleAttributes.0", "Outer Cone Angle", "45.0", scaleS, 64, EffectFileA.c_str());
-					std::vector<float> OCA = GetArrFromString(scaleS);
+					countParts++;
+					NodeIndex++;
+					INode *node;
+					std::wstring NameFX = std::wstring(riff->ATTO->at(attoi).fxName.begin(), riff->ATTO->at(attoi).fxName.end());
+					std::wstring EffectFile = EffectPath + NameFX + L".fx";
+					std::string EffectFileA = EffectPathA + riff->ATTO->at(attoi).fxName + ".fx";
+					if (GetPrivateProfileInt(L"Particle.0", L"Type", 0, EffectFile.c_str()) == 28)
+					{
+						LPSTR scaleS = new char[64];
+						GetPrivateProfileStringA("Particle.0", "X Scale", "1.0 ,1.0", scaleS, 64, EffectFileA.c_str());
+						std::vector<float> scalesX = GetArrFromString(scaleS);
+						GetPrivateProfileStringA("ParticleAttributes.0", "Color End", "255, 255, 255, 80", scaleS, 64, EffectFileA.c_str());
+						std::vector<float> ColorI = GetArrFromString(scaleS);
+						GetPrivateProfileStringA("ParticleAttributes.0", "Inner Cone Angle", "1.0", scaleS, 64, EffectFileA.c_str());
+						std::vector<float> ICA = GetArrFromString(scaleS);
+						GetPrivateProfileStringA("ParticleAttributes.0", "Outer Cone Angle", "45.0", scaleS, 64, EffectFileA.c_str());
+						std::vector<float> OCA = GetArrFromString(scaleS);
 
-					GenLight *gl = (GenLight *)CreateInstance(LIGHT_CLASS_ID, Class_ID(SPOT_LIGHT_CLASS_ID, 0));
-					gl->SetHotspot(0, ICA[0]);
-					gl->SetFallsize(0, OCA[0]);
-					gl->SetRGBColor(0, Point3(ColorI[0] / 255, ColorI[1] / 255, ColorI[2] / 255));
-					gl->SetIntensity(0, ColorI[3] * scalesX[0] / 1000.0);
-					gl->SetConeDisplay(TRUE);
-					gl->SetShadow(FALSE);
-					gl->SetUseLight(1);
+						GenLight *gl = (GenLight *)CreateInstance(LIGHT_CLASS_ID, Class_ID(SPOT_LIGHT_CLASS_ID, 0));
+						gl->SetHotspot(0, ICA[0]);
+						gl->SetFallsize(0, OCA[0]);
+						gl->SetRGBColor(0, Point3(ColorI[0] / 255, ColorI[1] / 255, ColorI[2] / 255));
+						gl->SetIntensity(0, ColorI[3] * scalesX[0] / 1000.0);
+						gl->SetConeDisplay(TRUE);
+						gl->SetShadow(FALSE);
+						gl->SetUseLight(1);
 
-					INode *nodegl = riff->gi->CreateObjectNode(gl);
-					//nodegl->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
-					nodegl->SetWireColor(RGB(ColorI[0], ColorI[1], ColorI[2]));
+						INode *nodegl = riff->gi->CreateObjectNode(gl);
+						//nodegl->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+						nodegl->SetWireColor(RGB(ColorI[0], ColorI[1], ColorI[2]));
 
-					GenSphere *gs = (GenSphere *)CreateInstance(GEOMOBJECT_CLASS_ID, Class_ID(SPHERE_CLASS_ID, 0));
-					gs->SetParams(0.0001, 4, TRUE, FALSE, 0.0, FALSE, FALSE);
-					node = riff->gi->CreateObjectNode(gs);
-					node->SetRenderable(FALSE);
+						GenSphere *gs = (GenSphere *)CreateInstance(GEOMOBJECT_CLASS_ID, Class_ID(SPHERE_CLASS_ID, 0));
+						gs->SetParams(0.0001, 4, TRUE, FALSE, 0.0, FALSE, FALSE);
+						node = riff->gi->CreateObjectNode(gs);
+						node->SetRenderable(FALSE);
 
-					//nameAnim = SetAnim(riff, node, CurrNode);
-					//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
-					Matrix3 tm;
-					tm.IdentityMatrix();
-					tm.RotateX(deg2rad(90.0));
-					nodegl->SetNodeTM(0, tm);
-					node->AttachChild(nodegl);
-				}
-				else
-				{
-					GenSphere *gs = (GenSphere *)CreateInstance(GEOMOBJECT_CLASS_ID, Class_ID(SPHERE_CLASS_ID, 0));
-					gs->SetParams(0.5, 4, TRUE, FALSE, 0.0, FALSE, FALSE);
-					node = riff->gi->CreateObjectNode(gs);
-					node->SetRenderable(FALSE);
-					//nameAnim = SetAnim(riff, node, CurrNode);
-					//Matrix3 tm;
-					//tm.IdentityMatrix();
-					//tm.RotateX(deg2rad(-90.0));
-					//node->SetNodeTM(0, tm);
-					//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
-					//tm.RotateX(deg2rad(-90.0));
-				}
+						//nameAnim = SetAnim(riff, node, CurrNode);
+						//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+						Matrix3 tm;
+						tm.IdentityMatrix();
+						tm.RotateX(deg2rad(90.0));
+						nodegl->SetNodeTM(0, tm);
+						node->AttachChild(nodegl);
+					}
+					else
+					{
+						GenSphere *gs = (GenSphere *)CreateInstance(GEOMOBJECT_CLASS_ID, Class_ID(SPHERE_CLASS_ID, 0));
+						gs->SetParams(0.5, 4, TRUE, FALSE, 0.0, FALSE, FALSE);
+						node = riff->gi->CreateObjectNode(gs);
+						node->SetRenderable(FALSE);
+						//nameAnim = SetAnim(riff, node, CurrNode);
+						//Matrix3 tm;
+						//tm.IdentityMatrix();
+						//tm.RotateX(deg2rad(-90.0));
+						//node->SetNodeTM(0, tm);
+						//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+						//tm.RotateX(deg2rad(-90.0));
+					}
 
-				if (ParentNode != NULL)
-				{
-					ParentNode->AttachChild(node);
-				}
-				if (ParentPart != NULL)
-				{
-					ParentPart->AttachChild(node);
-				}
-				Nodes->push_back(node);
+					if (ParentNode != NULL)
+					{
+						ParentNode->AttachChild(node);
+					}
+					if (ParentPart != NULL)
+					{
+						ParentPart->AttachChild(node);
+					}
+					Nodes->push_back(node);
 
-				
-				//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
 
-				node->SetWireColor(RGB(246, 7, 255));
-				OneNode = node;
-				std::wstring NameAtach = std::wstring(riff->ATTO->at(attoi).attachPoint.begin(), riff->ATTO->at(attoi).attachPoint.end()) + LODStr;
-				std::wstring ParamAttach = std::wstring(riff->ATTO->at(attoi).params.begin(), riff->ATTO->at(attoi).params.end());
-				//node->SetName(std::wstring(NameAtach + L"_" + std::to_wstring(NodeIndex) +L"_"+ std::to_wstring(ParentNodeIndex) +L"_A").c_str());
-				node->SetName(NameAtach.c_str());
-				if (attoi != riff->ATTO->size())
-				{
-					std::wstring XMLAttach = StartUD + L"<Attachpoint name = \"" + NameAtach + L"\"> <AttachedObject> <Effect effectName=\"" + NameFX + L"\" effectParams=\"" + ParamAttach + L"\"/> </AttachedObject> </Attachpoint>" + EndUD;
-					node->SetUserPropBuffer(XMLAttach.c_str());
+					//node->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+
+					node->SetWireColor(RGB(246, 7, 255));
+					OneNode = node;
+					std::wstring NameAtach = std::wstring(riff->ATTO->at(attoi).attachPoint.begin(), riff->ATTO->at(attoi).attachPoint.end()) + LODStr;
+					std::wstring ParamAttach = std::wstring(riff->ATTO->at(attoi).params.begin(), riff->ATTO->at(attoi).params.end());
+					//node->SetName(std::wstring(NameAtach + L"_" + std::to_wstring(NodeIndex) +L"_"+ std::to_wstring(ParentNodeIndex) +L"_A").c_str());
+					node->SetName(NameAtach.c_str());
+					if (attoi != riff->ATTO->size())
+					{
+						std::wstring XMLAttach = StartUD + L"<Attachpoint name = \"" + NameAtach + L"\"> <AttachedObject> <Effect effectName=\"" + NameFX + L"\" effectParams=\"" + ParamAttach + L"\"/> </AttachedObject> </Attachpoint>" + EndUD;
+						node->SetUserPropBuffer(XMLAttach.c_str());
+					}
 				}
 			}
 		}
@@ -1174,77 +1226,64 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 		Matrix3 tmP;
 		INode *node;
 		BoneNode = NULL;
-		if (riff->SGBR->at(CurrNode).bone_index >= 0)
+		bool FindPart = false;
+		bool FindRefp = false;
+		bool FindBone = false;
+		/*for (int cn = CurrNode; cn != -1; cn = riff->SCEN->at(cn).child_node_index)
 		{
-			NodeIndex++;
-			node = CreateBone(riff, CurrNode, ParentNodeIndex, ParentBone);
-			nameAnim = SetAnim(riff, node, CurrNode);
-			node->SetNodeTM(0, CalcTransform(riff, CurrNode));
-			if (ParentBone != NULL)
+			if (cn == 183)
 			{
-				ParentBone->AttachChild(node);
+				int m = 0;
 			}
-			else if (ParentNode != NULL)
+			if (cn == 308)
 			{
-				ParentNode->AttachChild(node);
+				int m = 0;
 			}
-			for (int i = 0; i < Nodes->size(); i++)
+			for (int pn = 0; pn < riff->LODT->at(LOD).PART->size(); pn++)
 			{
-				node->AttachChild(Nodes->at(i));
-				//nameAnim = SetAnim(riff, Nodes->at(i), CurrNode);
-				MSTR str;
-				Nodes->at(i)->GetUserPropBuffer(str);
-				std::wstring sstr = std::wstring(str);
-				int find = sstr.find(L"Attachpoint");
-				if(find>0)
+				if (riff->LODT->at(LOD).PART->at(pn).scenegraph_reference == cn)
 				{
-					Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode,1));
+					FindPart = true;
 				}
-				else
+			}
+			for (int en = 0; en < riff->REFP->size(); en++)
+			{
+				if (riff->REFP->at(en).scenegraph_reference == cn)
 				{
-					Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+					FindRefp = true;
 				}
 			}
-			node->SetWireColor(RGB(255, 255, 255));
-			if (riff->SGBN->at(CurrNode).bone_name == "")
-			{
-				node->SetName(std::wstring(L"Bone_NN_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode)).c_str());
-			}
-			else
-			{
-				std::wstring BoneName = std::wstring(riff->SGBN->at(CurrNode).bone_name.begin(), riff->SGBN->at(CurrNode).bone_name.end());
-				node->SetName(std::wstring(BoneName).c_str());// +L"_" + std::to_wstring(CurrNode)).c_str());
-			}
-			OneNode = node;
-			BoneNode = node;
-		}		
-		else if (countParts != 1)
-		{
-				NodeIndex++;
-				Object* object;
-				object = new  DummyObject();
-				node = riff->gi->CreateObjectNode(object);
-				if (!node) {
-					delete object;
-					return FALSE;
-				}
+		}*/
 
-				if (ParentNode != NULL)
+		
+		
+			if (riff->SGBR->at(CurrNode).bone_index >= 0)
+			{
+				NodeIndex++;
+				node = CreateBone(riff, CurrNode, ParentNodeIndex, ParentBone);
+				nameAnim = SetAnim(riff, node, CurrNode);
+				node->SetNodeTM(0, CalcTransform(riff, CurrNode));
+				if (ParentBone != NULL)
+				{
+					ParentBone->AttachChild(node);
+				}
+				if (NodeIndex == 106)
+				{
+					int m = 0;
+				}
+				else if (ParentNode != NULL)
 				{
 					ParentNode->AttachChild(node);
 				}
-				nameAnim = SetAnim(riff, node, CurrNode);
-				node->SetNodeTM(0, CalcTransform(riff, CurrNode));
 				for (int i = 0; i < Nodes->size(); i++)
 				{
-
-					//nameAnim = SetAnim(riff, Nodes->at(i), CurrNode);
 					node->AttachChild(Nodes->at(i));
+					//nameAnim = SetAnim(riff, Nodes->at(i), CurrNode);
 					MSTR str;
 					Nodes->at(i)->GetUserPropBuffer(str);
 					std::wstring sstr = std::wstring(str);
 					int find = sstr.find(L"Attachpoint");
-					if (find>0)
+					if (find > 0)
 					{
 						Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
 					}
@@ -1253,58 +1292,155 @@ BOOL CreateNode(RIFF* riff, std::vector<SSCEN>* scenes, int CurrNode, int Parent
 						Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
 					}
 				}
-				OneNode = node;
-				if (riff->SGVL->at(CurrNode).vis_index >= 0)
+				node->SetWireColor(RGB(255, 255, 255));
+				if (riff->SGBN->size() > 0)
 				{
-					std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.end());
-					std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
-					OneNode->SetUserPropBuffer(XMLVis.c_str());
-					if (nameAnim == L"")
+					if (riff->SGBN->at(CurrNode).bone_name == "")
 					{
-						nameAnim = NameVis;
+						node->SetName(std::wstring(L"Bone_NN_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode)).c_str());
 					}
-					OneNode->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
-				}
-				if (nameAnim == L"")
-				{
-					OneNode->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
+					else
+					{
+						std::wstring BoneName = std::wstring(riff->SGBN->at(CurrNode).bone_name.begin(), riff->SGBN->at(CurrNode).bone_name.end());
+						node->SetName(std::wstring(BoneName).c_str());// +L"_" + std::to_wstring(CurrNode)).c_str());
+					}
 				}
 				else
 				{
-					OneNode->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
+					node->SetName(std::wstring(L"Bone_NN_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode)).c_str());
 				}
-				if (riff->SGBR->at(CurrNode).bone_index >= 0)
-				{
-
+				OneNode = node;
+				BoneNode = node;
 			}
-		}
-		else
-		{
-			nameAnim = SetAnim(riff, OneNode, CurrNode);
-			MSTR str;
-			OneNode->GetUserPropBuffer(str);
-			std::wstring sstr = std::wstring(str);
-			int find = sstr.find(L"Attachpoint");
-			if (find>0)
+
+			else if (countParts != 1)
 			{
-				OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+				for (int pn = 0; pn < riff->LODT->at(LOD).PART->size(); pn++)
+				{
+					FindPart = FindGraph(riff, CurrNode, riff->LODT->at(LOD).PART->at(pn).scenegraph_reference, grafs);
+				}
+				for (int bn = 0; bn < riff->SGBR->size(); bn++)
+				{
+					if (riff->SGBR->at(bn).bone_index != -1)
+					{
+						FindBone = FindGraph(riff, CurrNode, bn, grafs);
+					}
+				}
+				for (int en = 0; en < riff->REFP->size(); en++)
+				{
+					FindRefp = FindGraph(riff, CurrNode, riff->REFP->at(en).scenegraph_reference, grafs);
+				}
+				if (std::find(grafs->begin(), grafs->end(), CurrNode) != grafs->end())
+				{
+					NodeIndex++;
+					Object* object;
+					object = new  DummyObject();
+					node = riff->gi->CreateObjectNode(object);
+					if (!node) {
+						delete object;
+						return FALSE;
+					}
+
+					if (ParentNode != NULL)
+					{
+						ParentNode->AttachChild(node);
+					}
+					nameAnim = SetAnim(riff, node, CurrNode);
+					node->SetNodeTM(0, CalcTransform(riff, CurrNode));
+					for (int i = 0; i < Nodes->size(); i++)
+					{
+
+						//nameAnim = SetAnim(riff, Nodes->at(i), CurrNode);
+						node->AttachChild(Nodes->at(i));
+						MSTR str;
+						Nodes->at(i)->GetUserPropBuffer(str);
+						std::wstring sstr = std::wstring(str);
+						int find = sstr.find(L"Attachpoint");
+						if (find > 0)
+						{
+							Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+						}
+						else
+						{
+							Nodes->at(i)->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+						}
+					}
+					OneNode = node;
+					if (riff->SGVL->at(CurrNode).vis_index >= 0)
+					{
+						std::wstring NameVis = std::wstring(riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.begin(), riff->VISI->at(riff->SGVL->at(CurrNode).vis_index).name.end());
+						std::wstring XMLVis = StartUD + L"<Visibility name=\"" + NameVis + L"\"></Visibility>" + EndUD;
+						OneNode->SetUserPropBuffer(XMLVis.c_str());
+						if (nameAnim == L"")
+						{
+							nameAnim = NameVis;
+						}
+						OneNode->SetName(std::wstring(NameVis + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
+					}
+					if (nameAnim == L"")
+					{
+						OneNode->SetName(std::wstring(L"Node_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
+					}
+					else
+					{
+						OneNode->SetName(std::wstring(nameAnim + L"_" + std::to_wstring(NodeIndex) + L"_" + std::to_wstring(CurrNode) + L"_D" + LODStr).c_str());
+					}
+					if (riff->SGBR->at(CurrNode).bone_index >= 0)
+					{
+
+					}
+				}
+
 			}
 			else
 			{
-				OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+				for (int pn = 0; pn < riff->LODT->at(LOD).PART->size(); pn++)
+				{
+					FindPart = FindGraph(riff, CurrNode, riff->LODT->at(LOD).PART->at(pn).scenegraph_reference, grafs);
+				}
+				for (int bn = 0; bn < riff->SGBR->size(); bn++)
+				{
+					if (riff->SGBR->at(bn).bone_index != -1)
+					{
+						FindBone = FindGraph(riff, CurrNode, bn, grafs);
+					}
+				}
+				for (int en = 0; en < riff->REFP->size(); en++)
+				{
+					FindRefp = FindGraph(riff, CurrNode, riff->REFP->at(en).scenegraph_reference, grafs);
+				}
+				if (std::find(grafs->begin(), grafs->end(), CurrNode) != grafs->end())
+				{
+					nameAnim = SetAnim(riff, OneNode, CurrNode);
+					MSTR str;
+					OneNode->GetUserPropBuffer(str);
+					std::wstring sstr = std::wstring(str);
+					int find = sstr.find(L"Attachpoint");
+					if (find > 0)
+					{
+						OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode, 1));
+					}
+					else
+					{
+						OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode, 0));
+					}
+				}
+				//OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode));
 			}
-			//OneNode->SetNodeTM(0, CalcTransform(riff, CurrNode));
-		}
 
+		
 
 
 		if (NodeIndex == 0)
 		{
 			rootNode = OneNode;
-		}		
-		CreateNode(riff, scenes, scenes->at(CurrNode).child_node_index, CurrNode, OneNode, BoneNode, LastPartNode, LOD, nameAnim);		
-		CurrNode = scenes->at(CurrNode).peer_node_index;		
-		}	
+		}
+		CreateNode(riff, scenes, scenes->at(CurrNode).child_node_index, CurrNode, OneNode, BoneNode, LastPartNode, LOD, nameAnim);
+		CurrNode = scenes->at(CurrNode).peer_node_index;
+		grafs->clear();
+		delete(grafs);
+		grafs = NULL;
+	}
 	
 
 
@@ -1350,35 +1486,7 @@ struct SHierarchy
 };
 std::vector<SHierarchy>* Hierarchy;
 
-void CreateHierarchy(RIFF* riff, int CurrNode)
-{
-	if (Hierarchy == NULL)
-	{
-		Hierarchy = new std::vector<SHierarchy>();
-	}
-	while (CurrNode >= 0)
-	{
-		int count = 0;
-		for (int j = 0; j < riff->LODT->size(); j++)
-		{
-			for (int i = 0; i < riff->LODT->at(j).PART->size(); i++)
-			{
-				SPART *part = &riff->LODT->at(j).PART->at(i);
 
-				if (part->type == 1)
-				{
-					if (part->scenegraph_reference == CurrNode)
-					{
-						count++;
-
-					}
-				}
-			}
-		}
-		CreateHierarchy(riff, riff->SCEN->at(CurrNode).child_node_index);
-		CurrNode = riff->SCEN->at(CurrNode).peer_node_index;
-	}
-}
 
 BOOL SetSkin(RIFF* riff)
 {
@@ -1387,6 +1495,10 @@ BOOL SetSkin(RIFF* riff)
 		int CurrVerb = riff->LODT->at(NodeParts->at(i).LOD).PART->at(NodeParts->at(i).Part).vertex_buffer_index;
 		if (riff->VERB->at(CurrVerb).SKIN != NULL)
 		{
+			if (i == 7)
+			{
+				int m = 0;
+			}
 			//ISkinImportData *skin = (ISkinImportData*)riff->gi->CreateInstance(OSM_CLASS_ID, Class_ID(9815843, 87654));
 
 			Modifier* skin = (Modifier*)riff->gi->CreateInstance(SClass_ID(OSM_CLASS_ID), SKIN_CLASSID);
@@ -1583,7 +1695,7 @@ int MDLConverterv2::DoImport(const TCHAR * filename, ImpInterface * i, Interface
 	tmO.RotateX(deg2rad(90.0));
 	CreateMtlLib(PRIFF, PRIFF->MAT3, PRIFF->EMT1, filename);
 
-	INode* nodeSR;
+	/*INode* nodeSR;
 	Object* objectSR;
 	objectSR = new  DummyObject();
 	nodeSR = PRIFF->gi->CreateObjectNode(objectSR);
@@ -1592,19 +1704,23 @@ int MDLConverterv2::DoImport(const TCHAR * filename, ImpInterface * i, Interface
 	if (!nodeSR) {
 		delete objectSR;
 		return FALSE;
-	}
+	}*/
+	//CreateHierarchy(PRIFF, 0, nodeSR);
 	INode* nodeExt;
 	Object* objectExt;
 	objectExt = new  DummyObject();
 	nodeExt = PRIFF->gi->CreateObjectNode(objectExt);
 	nodeExt->SetName((std::wstring(PRIFF->MDLN.begin(), PRIFF->MDLN.end()) + L"_Exterior").c_str());
+	
 	//nodeExt->SetName(L"Scene Root");
-	nodeSR->AttachChild(nodeExt);
+	//nodeSR->AttachChild(nodeExt);
 	if (!nodeExt) {
 		delete objectExt;
 		return FALSE;
 	}
+	
 	for (int j = 0; j < PRIFF->LODT->size(); j++)
+	//int j = 0;
 	{
 		INode* nodeLOD;
 		Object* objectLOD;
@@ -1618,9 +1734,13 @@ int MDLConverterv2::DoImport(const TCHAR * filename, ImpInterface * i, Interface
 			return FALSE;
 		}
 		//LODStr = std::wstring(L"_LOD_" + std::to_wstring(riff->LODT->at(LOD).LOD));
-		CreateNode(PRIFF, PRIFF->SCEN, 0, 0, nodeLOD, NULL, NULL, j);
+		
+
+
+		CreateNode(PRIFF, PRIFF->SCEN, 0, -1, nodeLOD, NULL, NULL, j);
+		SetSkin(PRIFF);
 	}
-	SetSkin(PRIFF);
+	
 	/*for (int i = 0; i < PRIFF->LODT->at(0).PART->size(); i++)
 	{
 		DrawPart(PRIFF, &PRIFF->LODT->at(0).PART->at(i));

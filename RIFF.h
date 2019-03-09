@@ -377,6 +377,16 @@ struct SXAPS
 	std::string bias;
 	std::string lag;
 };
+struct SXAPI
+{
+	std::string name;
+	bool CodeF = false;
+	bool SimF = false;
+	bool LagF = false;
+	std::string Code = "";
+	SSim Sim;
+	int Lag;
+};
 /*struct SVISC
 {
 	bool Default;
@@ -403,7 +413,7 @@ struct SXANI
 	char type[16]; //"Sim"
 	std::string *typeParam;// "AutoPlay
 	std::vector<SXANS>* XANS;
-	SXAPS XAPS;
+	SXAPI XAPI;
 };
 #pragma pack(pop)
 
@@ -552,6 +562,7 @@ public:
 	std::vector<SSGBN>* SGBN;
 	std::vector<SSGVL>* SGVL;
 	std::vector<SVISI>* VISI;
+	//std::vector<SXAPI>* XAPI;
 	std::vector<SAMAP>* AMAP;
 	std::vector<SXANI>* XANI;
 	std::vector<SREFP>* REFP;
@@ -571,6 +582,7 @@ public:
 	SVERB CurrVERB;
 	std::string MDLN;
 	int UniVISI = 0;
+	int UniXAPI = 0;
 };
 
 extern BOOL DrawPart(RIFF* riff, SPART* part);
